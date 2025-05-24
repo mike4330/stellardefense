@@ -1,0 +1,573 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+@font-face {
+    font-family: 'GameFont';
+    src: url('game-font.woff2') format('woff2'),
+         url('game-font.woff') format('woff'),
+         url('game-font.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap; /* Improves loading performance */
+}
+
+@font-face {
+    font-family: 'ScoreFont';
+    src: url('score-font.woff2') format('woff2'),
+         url('score-font.woff') format('woff'),
+         url('score-font.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap; /* Improves loading performance */
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'GameFont', 'Courier New', monospace;
+}
+
+#mainWrapper {
+    width: 600px;
+    margin: 0 auto;
+}
+
+#gameContainer {
+    position: relative;
+    border: 1px solid #333;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+canvas {
+    background: #000;
+    display: block;
+    border-radius: 10px;
+}
+
+#instructions {
+    position: absolute;
+    bottom: -30px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    color: #888;
+    font-size: 12px;
+    font-family: 'GameFont', 'Courier New', monospace;
+}
+
+#score {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    text-align: center;
+    color: #e20101;
+    font-size: 18px;
+    font-weight: bold;
+    font-family: 'GameFont', 'Courier New', monospace;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+    letter-spacing: 1px;
+}
+
+#scoreValue, #levelName {
+    font-family: 'ScoreFont', 'Arial Black', 'Impact', sans-serif;
+text-shadow: 0 0 20px #ff0000, 0 0 38px #fd6b6bea;
+    color: #e20101;
+    font-size: 22px;
+}
+
+#infoPanel {
+    width: 100%;
+    border: 1px solid #333;
+    border-radius: 12px;
+   
+    min-height: 70px;
+    background: #000;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 10px;
+}
+
+#infoTop {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+#progressContainer {
+    width: 90%;
+    max-width: 400px;
+}
+
+#progressLabel {
+    color: #ffffff;
+    font-size: 12px;
+    font-family: 'GameFont', 'Courier New', monospace;
+    margin-bottom: 4px;
+    text-align: center;
+}
+
+#progressBar {
+    width: 100%;
+    height: 8px;
+    background: #111;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 0px solid #222;
+}
+
+#progressFill {
+    height: 100%;
+    background: linear-gradient(90deg, #2222ff,#e30101, #ee1111) ;
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 3px;
+}
+
+#startOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#startButton {
+    background: #000;
+    border: 2px solid #00ccff;
+    color: #00ccff;
+    padding: 15px 40px;
+    font-size: 24px;
+    font-family: 'GameFont', 'Courier New', monospace;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    margin-top: 20px;
+}
+
+#startButton:hover {
+    background: #00ccff;
+    color: #000;
+    transform: scale(1.05);
+}
+
+#startButton:active {
+    transform: scale(0.95);
+}
+
+#viewHighScoresButton {
+    background: #000;
+    border: 2px solid #888;
+    color: #888;
+    padding: 12px 30px;
+    font-size: 18px;
+    font-family: 'GameFont', 'Courier New', monospace;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    margin-top: 15px;
+}
+
+#viewHighScoresButton:hover {
+    background: #888;
+    color: #000;
+    transform: scale(1.05);
+}
+
+#viewHighScoresButton:active {
+    transform: scale(0.95);
+}
+
+#gameTitle {
+    color: #00ccff;
+    font-size: 54px;
+    font-family: 'Orbitron', 'GameFont', 'Courier New', monospace;
+    font-weight: 900;
+    margin-bottom: 20px;
+    text-shadow: 0 0 15px #00ccff, 0 0 30px #0088ff;
+    letter-spacing: 4px;
+    text-align: center;
+    
+    /* Zoom-in animation */
+    animation: titleZoomIn 1500ms cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    transform: scale(0.1); /* Start very small */
+}
+
+/* Keyframe animation for title zoom-in effect */
+@keyframes titleZoomIn {
+    0% {
+        transform: scale(0.1);
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Game Overlay Styles */
+.game-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 500;
+    text-align: center;
+    border-radius: 10px;
+}
+
+.game-overlay.active {
+    display: flex;
+}
+
+/* Pause Overlay */
+.pause-overlay {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.pause-overlay .main-text {
+    color: #fff;
+    font-size: 48px;
+    font-family: 'Orbitron', 'GameFont', 'Courier New', monospace;
+    font-weight: 900;
+    margin-bottom: 20px;
+}
+
+.pause-overlay .sub-text {
+    color: #fff;
+    font-size: 16px;
+    font-family: 'GameFont', 'Courier New', monospace;
+}
+
+/* Game Over Overlay */
+.game-over-overlay {
+    background: rgba(20, 0, 40, 0.85);
+}
+
+.game-over-overlay .main-text {
+    color: #ff6666;
+    font-size: 64px;
+    font-family: 'Orbitron', 'GameFont', 'Courier New', monospace;
+    font-weight: 900;
+    margin-bottom: 40px;
+}
+
+.game-over-overlay .score-text {
+    color: #ffffff;
+    font-size: 20px;
+    font-family: 'GameFont', 'Courier New', monospace;
+    margin-bottom: 40px;
+}
+
+.game-over-overlay .sub-text {
+    color: #aaccff;
+    font-size: 16px;
+    font-family: 'GameFont', 'Courier New', monospace;
+    margin-bottom: 10px;
+}
+
+/* Level Transition Overlay */
+.level-transition-overlay {
+    background: rgba(0, 20, 40, 0.85);
+}
+
+.level-transition-overlay .main-text {
+    color: #00ccff;
+    text-shadow: 2px 2px 2px #C0CACE;
+    font-size: 56px;
+    font-family: 'Orbitron', 'GameFont', 'Courier New', monospace;
+    font-weight: 900;
+    margin-bottom: 20px;
+}
+
+.level-transition-overlay .level-text {
+    color: #00ccff;
+    font-size: 28px;
+    font-family: 'Orbitron', 'GameFont', 'Courier New', monospace;
+    font-weight: 700;
+    margin-bottom: 30px;
+}
+
+.level-transition-overlay .score-text {
+    color: #ffffff;
+    font-size: 20px;
+    font-family: 'GameFont', 'Courier New', monospace;
+    margin-bottom: 30px;
+}
+
+.level-transition-overlay .sub-text {
+    color: #aaccff;
+    font-size: 16px;
+    font-family: 'GameFont', 'Courier New', monospace;
+}
+
+/* Victory Overlay */
+.victory-overlay {
+    background: rgba(0, 30, 60, 0.85);
+}
+
+.victory-overlay .main-text {
+    color: #00ccff;
+    font-size: 48px;
+    font-family: 'Orbitron', 'GameFont', 'Courier New', monospace;
+    font-weight: 900;
+    margin-bottom: 30px;
+}
+
+.victory-overlay .score-text {
+    color: #00ccff;
+    font-size: 24px;
+    font-family: 'Orbitron', 'GameFont', 'Courier New', monospace;
+    font-weight: 700;
+    margin-bottom: 40px;
+}
+
+.victory-overlay .sub-text {
+    color: #aaccff;
+    font-size: 16px;
+    font-family: 'GameFont', 'Courier New', monospace;
+    margin-bottom: 10px;
+}
+
+/* High Score Entry Overlay */
+.high-score-entry-overlay {
+    background: rgba(0, 40, 80, 0.9);
+}
+
+.high-score-entry-overlay .main-text {
+    color: #ffaa00;
+    font-size: 48px;
+    font-family: 'Orbitron', 'GameFont', 'Courier New', monospace;
+    font-weight: 900;
+    margin-bottom: 20px;
+}
+
+.high-score-entry-overlay .score-info {
+    color: #ffffff;
+    font-size: 20px;
+    font-family: 'GameFont', 'Courier New', monospace;
+    margin-bottom: 30px;
+}
+
+.high-score-entry-overlay .score-info .highlight {
+    color: #ffaa00;
+    font-weight: bold;
+}
+
+.name-input-container {
+    margin-bottom: 30px;
+}
+
+.name-input-label {
+    color: #aaccff;
+    font-size: 16px;
+    font-family: 'GameFont', 'Courier New', monospace;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.name-input {
+    background: #000;
+    border: 2px solid #00ccff;
+    color: #00ccff;
+    padding: 12px 16px;
+    font-size: 20px;
+    font-family: 'GameFont', 'Courier New', monospace;
+    text-align: center;
+    width: 200px;
+    max-width: 200px;
+    border-radius: 6px;
+    text-transform: uppercase;
+}
+
+.name-input:focus {
+    outline: none;
+    border-color: #ffaa00;
+    color: #ffaa00;
+    box-shadow: 0 0 10px rgba(255, 170, 0, 0.3);
+}
+
+.high-score-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+}
+
+.high-score-btn {
+    background: #000;
+    border: 2px solid #00ccff;
+    color: #00ccff;
+    padding: 12px 30px;
+    font-size: 16px;
+    font-family: 'GameFont', 'Courier New', monospace;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.high-score-btn:hover {
+    background: #00ccff;
+    color: #000;
+    transform: scale(1.05);
+}
+
+.high-score-btn:active {
+    transform: scale(0.95);
+}
+
+.high-score-btn.primary {
+    border-color: #ffaa00;
+    color: #ffaa00;
+}
+
+.high-score-btn.primary:hover {
+    background: #ffaa00;
+    color: #000;
+}
+
+/* High Scores Table Overlay */
+.high-scores-overlay {
+    background: rgba(0, 0, 0, 0.9);
+    padding: 40px;
+    box-sizing: border-box;
+}
+
+.high-scores-header {
+    color: #00ccff;
+    text-shadow: 2px 2px 4px rgba(99, 99, 255, 0.7);
+    font-size: 42px;
+    font-family: 'Orbitron', 'GameFont', 'Courier New', monospace;
+    font-weight: 900;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.high-scores-table {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto 30px auto;
+    border-collapse: collapse;
+    font-family: 'GameFont', 'Courier New', monospace;
+}
+
+.high-scores-table th {
+    background: #001122;
+    color: #00ccff;
+    padding: 12px 8px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    border: 1px solid #00ccff;
+}
+
+.high-scores-table td {
+    padding: 10px 8px;
+    text-align: center;
+    font-size: 14px;
+    border: 1px solid #333;
+    background: rgba(0, 0, 0, 0.7);
+    color: #ffffff;
+}
+
+.score-entry.rank-1 td {
+    background: rgba(255, 215, 0, 0.1);
+    color: #ffd700;
+    font-weight: bold;
+}
+
+.score-entry.rank-2 td {
+    background: rgba(192, 192, 192, 0.1);
+    color: #c0c0c0;
+    font-weight: bold;
+}
+
+.score-entry.rank-3 td {
+    background: rgba(205, 127, 50, 0.1);
+    color: #cd7f32;
+    font-weight: bold;
+}
+
+.high-scores-table .rank {
+    width: 15%;
+    font-weight: bold;
+}
+
+.high-scores-table .name {
+    width: 25%;
+    text-align: left;
+}
+
+.high-scores-table .score {
+    width: 25%;
+    font-family: 'ScoreFont', 'GameFont', monospace;
+}
+
+.high-scores-table .level {
+    width: 15%;
+}
+
+.high-scores-table .date {
+    width: 20%;
+    font-size: 12px;
+}
+
+.no-scores {
+    text-align: center;
+    color: #aaccff;
+    font-family: 'GameFont', 'Courier New', monospace;
+    padding: 40px 20px;
+}
+
+.no-scores p {
+    margin: 10px 0;
+    font-size: 18px;
+}
+
+.close-high-scores {
+    display: block;
+    margin: 0 auto;
+    background: #000;
+    border: 2px solid #00ccff;
+    color: #00ccff;
+    padding: 12px 30px;
+    font-size: 16px;
+    font-family: 'GameFont', 'Courier New', monospace;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.close-high-scores:hover {
+    background: #00ccff;
+    color: #000;
+    transform: scale(1.05);
+}
+
+.close-high-scores:active {
+    transform: scale(0.95);
+} 

@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stellar Defense</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="mainWrapper">
+        <div id="infoPanel">
+            <div id="infoTop">
+                <span id="scoreValue">0</span> | <span id="levelName">1 Alpha</span>
+            </div>
+            <div id="progressContainer">
+                <div id="progressLabel">Enemies Remaining: <span id="enemiesRemaining">30</span></div>
+                <div id="progressBar">
+                    <div id="progressFill"></div>
+                </div>
+            </div>
+        </div>
+        <div id="gameContainer" style="position: relative;">
+            <canvas id="gameCanvas" width="600" height="800"></canvas>
+            <div id="instructions">Arrow keys to move • Space to shoot • P or ESC to pause • R to restart • Q to quit • H for high scores</div>
+            <div id="startOverlay">
+                <div id="gameTitle">STELLAR DEFENSE</div>
+                <button id="startButton">START GAME</button>
+                <button id="viewHighScoresButton">HIGH SCORES</button>
+            </div>
+            
+            <!-- Game State Overlays -->
+            <div id="pauseOverlay" class="game-overlay pause-overlay">
+                <div class="main-text">PAUSED</div>
+                <div class="sub-text">Press P or ESC to resume</div>
+            </div>
+            
+            <div id="gameOverOverlay" class="game-overlay game-over-overlay">
+                <div class="main-text">GAME OVER</div>
+                <div class="score-text">Final Score: <span id="finalScore">000000</span></div>
+                <div class="sub-text">Thanks for playing!</div>
+                <div class="sub-text">Press R to restart</div>
+            </div>
+            
+            <div id="levelTransitionOverlay" class="game-overlay level-transition-overlay">
+                <div class="main-text">LEVEL COMPLETE!</div>
+                <div class="level-text"><span id="completedLevelName">Level Name</span> cleared!</div>
+                <div class="score-text">Score: <span id="transitionScore">000000</span></div>
+                <div class="sub-text">Loading next level...</div>
+            </div>
+            
+            <div id="victoryOverlay" class="game-overlay victory-overlay">
+                <div class="main-text">VICTORY!</div>
+                <div class="score-text">Final Score: <span id="victoryScore">000000</span></div>
+                <div class="sub-text">All levels completed!</div>
+                <div class="sub-text">Press R to restart</div>
+            </div>
+            
+            <!-- High Score Entry Overlay -->
+            <div id="highScoreEntryOverlay" class="game-overlay high-score-entry-overlay">
+                <div class="main-text">NEW HIGH SCORE!</div>
+                <div class="score-info">
+                    Score: <span class="highlight" id="newHighScore">000000</span> | 
+                    Level: <span class="highlight" id="newHighLevel">1</span>
+                </div>
+                <div class="name-input-container">
+                    <label class="name-input-label" for="playerNameInput">Enter Your Name (8 characters max):</label>
+                    <input type="text" id="playerNameInput" class="name-input" maxlength="8" placeholder="PLAYER">
+                </div>
+                <div class="high-score-buttons">
+                    <button id="submitHighScore" class="high-score-btn primary">SUBMIT</button>
+                    <button id="skipHighScore" class="high-score-btn">SKIP</button>
+                </div>
+            </div>
+            
+            <!-- High Scores Table Overlay -->
+            <div id="highScoresOverlay" class="game-overlay high-scores-overlay">
+                <div class="high-scores-header">HIGH SCORES</div>
+                <div id="highScoresTable">
+                    <!-- Table will be populated by JavaScript -->
+                </div>
+                <button id="closeHighScores" class="close-high-scores">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="sound.js"></script>
+    <script src="level_config.js"></script>
+    <script src="visual_effects.js"></script>
+    <script src="high_scores.js"></script>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startOverlay = document.getElementById('startOverlay');
+        const startButton = document.getElementById('startButton');
+        
+        // Initialize visual effects
+        const visualEffects = new VisualEffects(canvas, ctx);
+        
+        // Initialize high score manager
+        const highScoreManager = new HighScoreManager();
+        
+        // Game state
+        const keys = {};
+        let score = 0;
+        let lastShot = 0;
+        let shotsInBurst = 0;  // Track shots in current burst
+        let lastBurstTime = 0; // Track when last burst started
+        let canShoot = true;   // Track if we can shoot in current burst
+        let paused = false;
+        let enemiesDestroyed = 0;
+        let totalEnemiesCreated = 0;
+        let gameWon = false;
+        let gameQuit = false;
+        let levelTransition = false;
+        let gameStartTime = 0; // Initialize to 0, will be set when game starts
+        let currentLevel = 1;
+        let debugMode = false;
+        let playerLives = 3;
+        let playerInvulnerable = false;
+        let playerInvulnerableTime = 0;
+        let gameStarted = false;
+        let highScoreChecked = false;  // Prevent multiple high score checks
+        
+        // Extra life system
+        const extraLifeThresholds = [10000, 21000, 44100, 92610];
+        let extraLifeIndex = 0;  // Track which threshold is next
+        
+        // Pause timing system
+        let pauseStartTime = 0;
+        let totalPausedTime = 0;
+        
+        // Level teleport system for debug mode
+        let teleportInput = '';
+        let teleportActive = false;
+        
+        // Spawn schedule system
+        let spawnSchedule = [];
+        let nextSpawnIndex = 0;  // Track which spawn is next to process
+        
+        // Base enemy configurations
+        const enemyBaseConfig = {
+            type1: {
+                speedX: { min: 1.0, max: 2.5 },
+                speedY: { min: 0.6, max: 1.2 },
+                points: 20,
+                respawnDelay: 750,
+                width: 22,
+                height: 22,
+                directionChangeProbability: 0.001,  // 2% chance per frame
+                reverseMovementProbability: 0.0  // No reverse movement
+            },
+            type2: {
+                speedX: { min: 0.5, max: 1.5 },
+                speedY: { min: 0.7, max: 1.3 },
+                points: 30,
+                respawnDelay: 950,
+                width: 26,
+                height: 26,
+                directionChangeProbability: 0.002,  // 1.5% chance per frame
+                reverseMovementProbability: 0.0  // No reverse movement
+            },
+            type3: {
+                speedX: { min: 1.0, max: 2.0 },
+                speedY: { min: .8, max: 1.4 },
+                points: 45,
+                respawnDelay: 975,
+                width: 30,
+                height: 30,
+                directionChangeProbability: 0.004,  // 2.5% chance per frame
+                reverseMovementProbability: 0.0  // No reverse movement
+            },
+            type4: {
+                speedX: { min: 0.8, max: 1.8 },
+                speedY: { min: 0.9, max: 1.5 },
+                points: 60,
+                respawnDelay: 1100,
+                width: 32,
+                height: 32,
+                directionChangeProbability: 0.006,  // 3% chance per frame (more erratic)
+                reverseMovementProbability: 0.003  // 0.3% chance to move backward (unique to type 4!)
+            },
+            type5: {
+                speedX: { min: 1.2, max: 2.2 },
+                speedY: { min: 1.0, max: 1.6 },
+                points: 75,
+                respawnDelay: 1200,
+                width: 28,
+                height: 28,
+                directionChangeProbability: 0.008,  // 4% chance per frame (very erratic)
+                reverseMovementProbability: 0.0  // No reverse movement
+            },
+            type6: {
+                speedX: { min: 1.0, max: 2.0 },
+                speedY: { min: 1.1, max: 1.7 },
+                points: 90,
+                respawnDelay: 1300,
+                width: 34,
+                height: 34,
+                directionChangeProbability: 0.006,  // 3% chance per frame 
+                reverseMovementProbability: 0.008  // 0.8% chance to reverse Y direction (high retrograde capability)
+            }
+        };
+        
+        // Current level config
+        let enemyConfig = levelConfigs[currentLevel];
+        
+        // Generate spawn schedule for the current level
+        function generateSpawnSchedule(levelConfig) {
+            const schedule = [];
+            
+            for (let i = 0; i < levelConfig.global.maxEnemies; i++) {
+                // Random time within the spawn window
+                const randomTime = Math.random() * levelConfig.global.spawnTimeWindow;
+                schedule.push({
+                    spawnTime: randomTime,
+                    spawned: false
+                });
+            }
+            
+            // Sort by spawn time so we can process chronologically
+            schedule.sort((a, b) => a.spawnTime - b.spawnTime);
+            
+            return schedule;
+        }
+        
+        // Player ship
+        const player = {
+            x: canvas.width / 2 - 9,
+            y: canvas.height - 55,
+            width: 18,
+            height: 18,
+            speed: 5,
+            velocityX: 0,  // Current x velocity
+            velocityY: 0,  // Current y velocity
+            maxSpeedX: 5,  // Maximum x speed
+            maxSpeedY: 5,  // Maximum y speed
+            accelerationX: 0.15,  // X acceleration factor for ease-in
+            accelerationY: 0.15,  // Y acceleration factor for ease-in (lower = more noticeable ease)
+            frictionX: 0.75,  // X friction for smooth stop
+            frictionY: 0.75,  // Y friction for smooth stop
+            respawnX: canvas.width / 2 - 9,  // Store respawn position
+            respawnY: canvas.height - 55
+        };
+        
+        // Game objects
+        const enemies = [];
+        const maxEnemies = enemyConfig.global.maxEnemies;
+        
+        // Bullets array
+        const bullets = [];
+        
+        // Enemy bullets array
+        const enemyBullets = [];
+        
+        // Input handling
+        document.addEventListener('keydown', (e) => {
+            // Initialize audio on first interaction
+            if (!soundManager.audioContext) {
+                soundManager.initAudio();
+            }
+            
+            keys[e.code] = true;
+            
+            // Handle level teleport in debug mode
+            if (debugMode && gameStarted && !paused) {
+                if (e.key === 'j' && !teleportActive) {
+                    // Start teleport input
+                    teleportActive = true;
+                    teleportInput = '';
+                    console.log('Level teleport activated. Enter level number and press Enter...');
+                    return;
+                } else if (teleportActive) {
+                    if (e.key === 'Enter') {
+                        // Execute teleport
+                        const targetLevel = parseInt(teleportInput);
+                        if (!isNaN(targetLevel) && targetLevel > 0) {
+                            teleportToLevel(targetLevel);
+                        } else {
+                            console.log('Invalid level number:', teleportInput);
+                        }
+                        teleportActive = false;
+                        teleportInput = '';
+                        return;
+                    } else if (e.key === 'Escape') {
+                        // Cancel teleport
+                        console.log('Level teleport cancelled');
+                        teleportActive = false;
+                        teleportInput = '';
+                        return;
+                    } else if (e.key >= '0' && e.key <= '9') {
+                        // Add digit to teleport input
+                        teleportInput += e.key;
+                        console.log('Teleport target:', teleportInput);
+                        return;
+                    } else if (e.key === 'Backspace') {
+                        // Remove last digit
+                        teleportInput = teleportInput.slice(0, -1);
+                        console.log('Teleport target:', teleportInput || '(empty)');
+                        return;
+                    }
+                    // For any other key during teleport input, ignore but don't cancel
+                    return;
+                }
+            }
+            
+            if (e.code === 'KeyP' || e.code === 'Escape') {
+                // Cancel teleport if escape is pressed
+                if (teleportActive) {
+                    console.log('Level teleport cancelled');
+                    teleportActive = false;
+                    teleportInput = '';
+                    return;
+                }
+                
+                // Handle pause/unpause with timing
+                if (!paused) {
+                    // Pausing the game
+                    paused = true;
+                    pauseStartTime = Date.now();
+                } else {
+                    // Unpausing the game
+                    paused = false;
+                    if (pauseStartTime > 0) {
+                        totalPausedTime += Date.now() - pauseStartTime;
+                        pauseStartTime = 0;
+                    }
+                }
+            }
+            
+            if (e.code === 'KeyR') {
+                restartGame();
+            }
+            
+            if (e.code === 'KeyQ') {
+                quitGame();
+            }
+            
+            if (e.code === 'KeyD') {
+                debugMode = !debugMode;  // Toggle debug mode
+                if (debugMode) {
+                    console.log('Debug mode enabled. Press j<levelnumber><enter> to teleport to a level');
+                } else {
+                    console.log('Debug mode disabled');
+                    // Cancel any active teleport input
+                    teleportActive = false;
+                    teleportInput = '';
+                }
+            }
+            
+            if (e.code === 'KeyH') {
+                highScoreManager.showHighScores();
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+        
+        // Collision detection
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+        
+        // Circular collision detection for type 4 enemies
+        function checkCircularCollision(circle, rect) {
+            // Get circle center and radius
+            const circleX = circle.x + circle.width / 2;
+            const circleY = circle.y + circle.height / 2;
+            const radius = circle.width / 2; // Assuming circular shape with radius = width/2
+            
+            // Get rectangle center
+            const rectCenterX = rect.x + rect.width / 2;
+            const rectCenterY = rect.y + rect.height / 2;
+            
+            // Calculate distance between centers
+            const dx = circleX - rectCenterX;
+            const dy = circleY - rectCenterY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // Check if distance is less than radius (treating other object as a point for simplicity)
+            // For bullets and small objects, this works well
+            const otherRadius = Math.min(rect.width, rect.height) / 2;
+            return distance < (radius + otherRadius);
+        }
+        
+        // Enhanced collision check that handles both rectangular and circular collision
+        function checkEnhancedCollision(obj1, obj2) {
+            // Check if either object is a type 4 enemy (circular collision)
+            const obj1IsType4 = obj1.type === 4;
+            const obj2IsType4 = obj2.type === 4;
+            
+            if (obj1IsType4 && !obj2IsType4) {
+                return checkCircularCollision(obj1, obj2);
+            } else if (obj2IsType4 && !obj1IsType4) {
+                return checkCircularCollision(obj2, obj1);
+            } else if (obj1IsType4 && obj2IsType4) {
+                // Both are type 4, use circle-to-circle collision
+                const center1X = obj1.x + obj1.width / 2;
+                const center1Y = obj1.y + obj1.height / 2;
+                const radius1 = obj1.width / 2;
+                
+                const center2X = obj2.x + obj2.width / 2;
+                const center2Y = obj2.y + obj2.height / 2;
+                const radius2 = obj2.width / 2;
+                
+                const dx = center1X - center2X;
+                const dy = center1Y - center2Y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                return distance < (radius1 + radius2);
+            } else {
+                // Neither is type 4, use regular rectangular collision
+                return checkCollision(obj1, obj2);
+            }
+        }
+        
+        // Check if enemies are colliding and handle avoidance
+        function handleEnemyCollision() {
+            for (let i = 0; i < enemies.length; i++) {
+                for (let j = i + 1; j < enemies.length; j++) {
+                    const enemy1 = enemies[i];
+                    const enemy2 = enemies[j];
+                    
+                    if (enemy1.alive && enemy2.alive && checkEnhancedCollision(enemy1, enemy2)) {
+                        const centerX1 = enemy1.x + enemy1.width / 2;
+                        const centerY1 = enemy1.y + enemy1.height / 2;
+                        const centerX2 = enemy2.x + enemy2.width / 2;
+                        const centerY2 = enemy2.y + enemy2.height / 2;
+                        
+                        const dx = centerX1 - centerX2;
+                        const dy = centerY1 - centerY2;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance > 0) {
+                            const separationForce = enemyConfig.global.collisionSeparation;
+                            const separationX = (dx / distance) * separationForce;
+                            const separationY = (dy / distance) * separationForce;
+                            
+                            enemy1.x += separationX;
+                            enemy1.y += separationY;
+                            enemy2.x -= separationX;
+                            enemy2.y -= separationY;
+                            
+                            enemy1.x = Math.max(0, Math.min(canvas.width - enemy1.width, enemy1.x));
+                            enemy1.y = Math.max(0, Math.min(canvas.height - enemy1.height, enemy1.y));
+                            enemy2.x = Math.max(0, Math.min(canvas.width - enemy2.width, enemy2.x));
+                            enemy2.y = Math.max(0, Math.min(canvas.height - enemy2.height, enemy2.y));
+                            
+                            enemy1.direction *= -1;
+                            enemy2.direction *= -1;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Create explosion effect
+        function createExplosion(x, y) {
+            visualEffects.createExplosion(x, y, soundManager);
+        }
+        
+        // Update score display
+        function updateScore(points) {
+            const oldScore = score;
+            score += points;
+            document.getElementById('scoreValue').textContent = score.toString().padStart(6, '0');
+            
+            // Check for extra life thresholds
+            if (extraLifeIndex < extraLifeThresholds.length) {
+                const threshold = extraLifeThresholds[extraLifeIndex];
+                if (oldScore < threshold && score >= threshold) {
+                    // Award extra life
+                    playerLives++;
+                    extraLifeIndex++;
+                    
+                    // Visual and audio feedback
+                    console.log(`Extra life earned at ${threshold} points! Lives: ${playerLives}`);
+                    soundManager.playSpawnSound(); // Use spawn sound for extra life (positive sound)
+                    
+                    // Could add a visual effect here later
+                    createExplosion(player.x + player.width / 2, player.y + player.height / 2); // Temporary visual effect
+                }
+            }
+        }
+        
+        // Update level display
+        function updateLevelDisplay() {
+            document.getElementById('levelName').textContent = enemyConfig.name;
+        }
+        
+        // Update progress bar display
+        function updateProgressBar() {
+            const remaining = enemyConfig.global.maxEnemies - enemiesDestroyed;
+            const progressPercentage = (enemiesDestroyed / enemyConfig.global.maxEnemies) * 100;
+            
+            document.getElementById('enemiesRemaining').textContent = remaining;
+            document.getElementById('progressFill').style.width = progressPercentage + '%';
+        }
+        
+        // Create new enemy
+        function createEnemy(type = 1) {
+            // Play spawn sound
+            soundManager.playSpawnSound();
+            
+            // Determine enemy type based on level and spawn chances
+            let enemyType = type;
+            let config;
+            
+            if (type === 1) {
+                // Random type selection for automatic spawning
+                const allowedTypes = enemyConfig.allowedEnemyTypes;
+                
+                // Randomly pick from allowed types
+                enemyType = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
+                config = enemyBaseConfig[`type${enemyType}`];
+            } else {
+                // Specific type requested - check if it's allowed
+                if (enemyConfig.allowedEnemyTypes.includes(type)) {
+                    config = enemyBaseConfig[`type${type}`];
+                } else {
+                    // Fallback to first allowed type
+                    enemyType = enemyConfig.allowedEnemyTypes[0];
+                    config = enemyBaseConfig[`type${enemyType}`];
+                }
+            }
+            
+            // Apply level speed multiplier
+            const speedMultiplier = enemyConfig.global.speedMultiplier || 1.0;
+            
+            const enemy = {
+                x: Math.random() * (canvas.width - config.width),
+                y: Math.random() * -50 - 20,  // Spawn closer to top of screen
+                width: config.width,
+                height: config.height,
+                speedX: (Math.random() * (config.speedX.max - config.speedX.min) + config.speedX.min) * speedMultiplier,
+                speedY: (Math.random() * (config.speedY.max - config.speedY.min) + config.speedY.min) * speedMultiplier,
+                direction: Math.random() > 0.5 ? 1 : -1,
+                directionY: 1,  // Start moving downward
+                alive: true,
+                type: enemyType
+            };
+            
+            // Add rotation for type 5 enemies to match their direction of travel
+            if (enemyType === 5) {
+                const vx = enemy.speedX * enemy.direction;
+                const vy = enemy.speedY * enemy.directionY;
+                enemy.rotation = Math.atan2(vy, vx) - Math.PI/2;
+            }
+            
+            // Add force field properties for type 4 enemies
+            if (enemyType === 4) {
+                enemy.forceField = {
+                    active: false,
+                    nextActivationTime: Math.random() * 10000 + 5000, // Random delay 5-15 seconds
+                    duration: 30000, // 30 seconds
+                    activationChance: 0.20, // 20% chance
+                    lastCheckTime: Date.now()
+                };
+            }
+            
+            return enemy;
+        }
+        
+        // Spawn enemies based on schedule
+        function spawnEnemies() {
+            // Don't spawn if game hasn't started yet
+            if (gameStartTime === 0) return;
+            
+            // Calculate current game time, excluding paused time
+            const currentTime = (Date.now() - gameStartTime - totalPausedTime) / 1000;
+            
+            // Check if any scheduled spawns are ready
+            while (nextSpawnIndex < spawnSchedule.length) {
+                const spawn = spawnSchedule[nextSpawnIndex];
+                
+                if (!spawn.spawned && currentTime >= spawn.spawnTime) {
+                    enemies.push(createEnemy());
+                    spawn.spawned = true;
+                    totalEnemiesCreated++;
+                    nextSpawnIndex++;
+                } else {
+                    // Since schedule is sorted, no more spawns are ready yet
+                    break;
+                }
+            }
+        }
+        
+        // Restart game function
+        function restartGame() {
+            score = 0;
+            enemiesDestroyed = 0;
+            totalEnemiesCreated = 0;
+            gameWon = false;
+            gameQuit = false;
+            levelTransition = false;
+            paused = false;
+            currentLevel = 1;
+            playerLives = 3;
+            playerInvulnerable = false;
+            gameStartTime = Date.now();
+            highScoreChecked = false;  // Reset high score check flag
+            
+            // Reset pause timing
+            pauseStartTime = 0;
+            totalPausedTime = 0;
+            
+            // Reset extra life tracking
+            extraLifeIndex = 0;
+            
+            enemyConfig = levelConfigs[currentLevel];
+            
+            // Update visual effects level
+            visualEffects.setCurrentLevel(currentLevel);
+            
+            // Generate new spawn schedule for this level
+            spawnSchedule = generateSpawnSchedule(enemyConfig);
+            nextSpawnIndex = 0;
+            
+            document.getElementById('scoreValue').textContent = score.toString().padStart(6, '0');
+            updateLevelDisplay();
+            updateProgressBar();
+            
+            player.x = player.respawnX;
+            player.y = player.respawnY;
+            
+            enemies.length = 0;
+            bullets.length = 0;
+            enemyBullets.length = 0;
+            visualEffects.explosions.length = 0;
+        }
+        
+        // Advance to next level
+        function nextLevel() {
+            currentLevel++;
+            if (levelConfigs[currentLevel]) {
+                enemyConfig = levelConfigs[currentLevel];
+                enemiesDestroyed = 0;
+                totalEnemiesCreated = 0;
+                gameWon = false;
+                levelTransition = false;
+                gameStartTime = Date.now();
+                
+                // Reset pause timing for new level
+                pauseStartTime = 0;
+                totalPausedTime = 0;
+                
+                // Update visual effects level
+                visualEffects.setCurrentLevel(currentLevel);
+                
+                // Generate new spawn schedule for this level
+                spawnSchedule = generateSpawnSchedule(enemyConfig);
+                nextSpawnIndex = 0;
+                
+                updateLevelDisplay();
+                updateProgressBar();
+                
+                enemies.length = 0;
+                bullets.length = 0;
+                enemyBullets.length = 0;
+                visualEffects.explosions.length = 0;
+            } else {
+                gameWon = true;
+                levelTransition = false;
+            }
+        }
+        
+        // Teleport to specific level (debug function)
+        function teleportToLevel(targetLevel) {
+            if (!debugMode) return; // Only allow in debug mode
+            
+            if (levelConfigs[targetLevel]) {
+                currentLevel = targetLevel;
+                enemyConfig = levelConfigs[currentLevel];
+                enemiesDestroyed = 0;
+                totalEnemiesCreated = 0;
+                gameWon = false;
+                levelTransition = false;
+                gameStartTime = Date.now();
+                
+                // Reset pause timing for teleported level
+                pauseStartTime = 0;
+                totalPausedTime = 0;
+                
+                // Update visual effects level
+                visualEffects.setCurrentLevel(currentLevel);
+                
+                // Generate new spawn schedule for this level
+                spawnSchedule = generateSpawnSchedule(enemyConfig);
+                nextSpawnIndex = 0;
+                
+                updateLevelDisplay();
+                updateProgressBar();
+                
+                enemies.length = 0;
+                bullets.length = 0;
+                enemyBullets.length = 0;
+                visualEffects.explosions.length = 0;
+                
+                console.log(`Teleported to level ${targetLevel}: ${enemyConfig.name}`);
+            } else {
+                console.log(`Level ${targetLevel} does not exist`);
+            }
+        }
+        
+        // Shoot bullet
+        function shootBullet() {
+            const now = Date.now();
+            
+            // Reset burst if player hasn't fired for 2 seconds
+            if (now - lastShot > 2000) {
+                shotsInBurst = 0;
+                canShoot = true;
+            }
+            
+            // If we're in cooldown, check if it's been long enough
+            if (shotsInBurst >= 5) {
+                if (now - lastBurstTime < 550) { // 550ms cooldown
+                    return;
+                }
+                // Reset burst if cooldown is over
+                shotsInBurst = 0;
+                canShoot = true;
+            }
+            
+            // Only shoot if we're allowed to in this burst
+            if (!canShoot) {
+                return;
+            }
+            
+            // Add delay between individual bullets in burst (85ms)
+            if (shotsInBurst > 0 && now - lastShot < 85) {
+                return;
+            }
+            
+            bullets.push({
+                x: player.x + player.width / 2 - 1,
+                y: player.y,
+                width: 2,
+                height: 6,
+                speed: 8
+            });
+            
+            soundManager.playBulletSound();
+            shotsInBurst++;
+            lastShot = now;
+            
+            // If we've used all shots, start cooldown timer and prevent further shooting
+            if (shotsInBurst >= 5) {
+                canShoot = false;
+                lastBurstTime = now;  // Start cooldown timer when burst completes
+            }
+        }
+        
+        // Update game state
+        function update() {
+            if (!gameStarted || paused || gameWon || levelTransition) return;
+            
+            // If game is quit, only update starfield
+            if (gameQuit) {
+                visualEffects.updateStarfield();
+                return;
+            }
+            
+            spawnEnemies();
+            
+            // Handle player invulnerability
+            if (playerInvulnerable) {
+                const now = Date.now();
+                if (now - playerInvulnerableTime > 2000) { // 2 seconds of invulnerability
+                    playerInvulnerable = false;
+                }
+            }
+            
+            // Horizontal movement with ease-in
+            let targetVelocityX = 0;
+            if (keys['ArrowLeft'] && player.x > 0) {
+                targetVelocityX = -player.maxSpeedX;
+            }
+            if (keys['ArrowRight'] && player.x < canvas.width - player.width) {
+                targetVelocityX = player.maxSpeedX;
+            }
+            
+            // Apply easing to x velocity
+            if (targetVelocityX !== 0) {
+                // Accelerate towards target velocity
+                player.velocityX += (targetVelocityX - player.velocityX) * player.accelerationX;
+            } else {
+                // Apply friction when no input
+                player.velocityX *= player.frictionX;
+            }
+            
+            // Apply velocity to position
+            player.x += player.velocityX;
+            
+            // Vertical movement with ease-in
+            let targetVelocityY = 0;
+            if (keys['ArrowUp'] && player.y > canvas.height / 2) {
+                targetVelocityY = -player.maxSpeedY;
+            }
+            if (keys['ArrowDown'] && player.y < canvas.height - player.height) {
+                targetVelocityY = player.maxSpeedY;
+            }
+            
+            // Apply easing to y velocity
+            if (targetVelocityY !== 0) {
+                // Accelerate towards target velocity
+                player.velocityY += (targetVelocityY - player.velocityY) * player.accelerationY;
+            } else {
+                // Apply friction when no input
+                player.velocityY *= player.frictionY;
+            }
+            
+            // Apply velocity to position
+            player.y += player.velocityY;
+            
+            const now = Date.now();
+            if (keys['Space']) {
+                shootBullet();
+            }
+            
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                if (enemy.alive) {
+                    // Get the base config for this enemy type
+                    const baseConfig = enemyBaseConfig[`type${enemy.type}`];
+                    
+                    // Random direction change based on probability, modified by level's eccentricity
+                    const eccentricityMultiplier = enemyConfig.global.eccentricityMultiplier || 1.0;
+                    if (Math.random() < baseConfig.directionChangeProbability * eccentricityMultiplier) {
+                        enemy.direction *= -1;
+                    }
+                    
+                    // Check for reverse movement (type 4 only) - but not if in top 10% of screen
+                    if (enemy.y > canvas.height * 0.1 && Math.random() < baseConfig.reverseMovementProbability * eccentricityMultiplier) {
+                        enemy.directionY *= -1;
+                    }
+                    
+                    // Special case: Type 6 can reverse movement anywhere on screen (enhanced retrograde)
+                    if (enemy.type === 6 && Math.random() < baseConfig.reverseMovementProbability * eccentricityMultiplier) {
+                        enemy.directionY *= -1;
+                    }
+                    
+                    enemy.x += enemy.speedX * enemy.direction;
+                    
+                    if (enemy.x <= 0 || enemy.x >= canvas.width - enemy.width) {
+                        enemy.direction *= -1;
+                    }
+                    
+                    enemy.y += enemy.speedY * enemy.directionY;
+                    
+                    // Update rotation for type 5 enemies to match their direction of travel
+                    if (enemy.type === 5) {
+                        const vx = enemy.speedX * enemy.direction;
+                        const vy = enemy.speedY * enemy.directionY;
+                        enemy.rotation = Math.atan2(vy, vx) - Math.PI/2;
+                        
+                        // Type 5 enemies can shoot bullets
+                        if (!enemy.lastShot) enemy.lastShot = 0;
+                        if (now - enemy.lastShot > 2000 + Math.random() * 3000) { // Random shooting interval between 2-5 seconds
+                            enemy.lastShot = now;
+                            
+                            // Calculate bullet velocity based on enemy's rotation
+                            const bulletSpeed = 3;
+                            const bulletVx = -Math.cos(enemy.rotation) * bulletSpeed;
+                            const bulletVy = Math.sin(enemy.rotation) * bulletSpeed;
+                            
+                            enemyBullets.push({
+                                x: enemy.x + enemy.width / 2 - 2,
+                                y: enemy.y + enemy.height / 2 - 3,
+                                width: 4,
+                                height: 6,
+                                vx: bulletVx,
+                                vy: bulletVy
+                            });
+                            
+                            // Play enemy bullet sound (slightly different from player)
+                            soundManager.playEnemyBulletSound();
+                        }
+                    }
+                    
+                    // Handle wrapping for enemies going off screen
+                    if (enemy.y > canvas.height) {
+                        enemy.y = Math.random() * -50 - 20;  // Match the spawn position
+                        enemy.x = Math.random() * (canvas.width - enemy.width);
+                        enemy.direction = Math.random() > 0.5 ? 1 : -1;
+                        enemy.directionY = 1;  // Reset to moving downward
+                        
+                        // Update rotation for type 5 enemies after wrapping
+                        if (enemy.type === 5) {
+                            const vx = enemy.speedX * enemy.direction;
+                            const vy = enemy.speedY * enemy.directionY;
+                            enemy.rotation = Math.atan2(vy, vx) - Math.PI/2;
+                        }
+                    } else if (enemy.y < -100) {  // If moving backward and goes too far up
+                        enemy.y = canvas.height + 20;  // Wrap to bottom
+                        enemy.x = Math.random() * (canvas.width - enemy.width);
+                        enemy.direction = Math.random() > 0.5 ? 1 : -1;
+                        enemy.directionY = 1;  // Reset to moving downward
+                        
+                        // Update rotation for type 5 enemies after wrapping
+                        if (enemy.type === 5) {
+                            const vx = enemy.speedX * enemy.direction;
+                            const vy = enemy.speedY * enemy.directionY;
+                            enemy.rotation = Math.atan2(vy, vx) - Math.PI/2;
+                        }
+                    }
+                    
+                    // Update force field for type 4 enemies
+                    if (enemy.type === 4 && enemy.forceField) {
+                        const currentTime = now;
+                        
+                        if (!enemy.forceField.active) {
+                            // Check if it's time to potentially activate the force field
+                            if (currentTime - enemy.forceField.lastCheckTime >= enemy.forceField.nextActivationTime) {
+                                // Roll for activation chance
+                                if (Math.random() < enemy.forceField.activationChance) {
+                                    enemy.forceField.active = true;
+                                    enemy.forceField.activationStartTime = currentTime;
+                                }
+                                
+                                // Set next check time regardless of activation
+                                enemy.forceField.lastCheckTime = currentTime;
+                                enemy.forceField.nextActivationTime = Math.random() * 10000 + 5000; // 5-15 seconds
+                            }
+                        } else {
+                            // Force field is active, check if duration is over
+                            if (currentTime - enemy.forceField.activationStartTime >= enemy.forceField.duration) {
+                                enemy.forceField.active = false;
+                                enemy.forceField.lastCheckTime = currentTime;
+                                enemy.forceField.nextActivationTime = Math.random() * 10000 + 5000; // 5-15 seconds
+                            }
+                        }
+                    }
+                    
+                    // Check for collision with player
+                    if (!playerInvulnerable && checkEnhancedCollision(player, enemy)) {
+                        handlePlayerDeath();
+                    }
+                }
+            }
+            
+            handleEnemyCollision();
+            
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                // Handle deflected bullets with different movement
+                if (bullets[i].deflected && bullets[i].vx !== undefined && bullets[i].vy !== undefined) {
+                    bullets[i].x += bullets[i].vx;
+                    bullets[i].y += bullets[i].vy;
+                } else {
+                    bullets[i].y -= bullets[i].speed;
+                }
+                
+                let bulletHit = false;
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const enemy = enemies[j];
+                    if (enemy.alive && checkEnhancedCollision(bullets[i], enemy)) {
+                        // Check if this is a type 4 enemy with active force field
+                        if (enemy.type === 4 && enemy.forceField && enemy.forceField.active) {
+                            // Deflect bullet instead of destroying enemy
+                            const bulletCenterX = bullets[i].x + bullets[i].width / 2;
+                            const bulletCenterY = bullets[i].y + bullets[i].height / 2;
+                            const enemyCenterX = enemy.x + enemy.width / 2;
+                            const enemyCenterY = enemy.y + enemy.height / 2;
+                            
+                            // Calculate deflection angle
+                            const dx = bulletCenterX - enemyCenterX;
+                            const dy = bulletCenterY - enemyCenterY;
+                            const length = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (length > 0) {
+                                // Deflect bullet away from enemy center
+                                const deflectionSpeed = 6;
+                                bullets[i].vx = (dx / length) * deflectionSpeed;
+                                bullets[i].vy = (dy / length) * deflectionSpeed;
+                                bullets[i].deflected = true; // Mark as deflected to change behavior
+                            }
+                            
+                            // Create small visual effect for deflection
+                            for (let k = 0; k < 3; k++) {
+                                visualEffects.explosions.push({
+                                    x: bulletCenterX,
+                                    y: bulletCenterY,
+                                    vx: (Math.random() - 0.5) * 2,
+                                    vy: (Math.random() - 0.5) * 2,
+                                    life: 15,
+                                    maxLife: 15
+                                });
+                            }
+                            
+                            break; // Don't destroy the bullet or enemy
+                        } else {
+                            // Normal collision - destroy enemy
+                            createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+                            let points;
+                            if (enemy.type === 5) {
+                                points = enemyBaseConfig.type5.points;
+                            } else if (enemy.type === 4) {
+                                points = enemyBaseConfig.type4.points;
+                            } else if (enemy.type === 3) {
+                                points = enemyBaseConfig.type3.points;
+                            } else if (enemy.type === 2) {
+                                points = enemyBaseConfig.type2.points;
+                            } else if (enemy.type === 6) {
+                                points = enemyBaseConfig.type6.points;
+                            } else {
+                                points = enemyBaseConfig.type1.points;
+                            }
+                            
+                            // Apply score bonus from level configuration
+                            const scoreBonus = enemyConfig.global.scoreBonus || 0;
+                            points += scoreBonus;
+                            
+                            updateScore(points);
+                            enemy.alive = false;
+                            enemiesDestroyed++;
+                            updateProgressBar();
+                            bullets.splice(i, 1);
+                            bulletHit = true;
+                            
+                            setTimeout(() => {
+                                const index = enemies.indexOf(enemy);
+                                if (index > -1) {
+                                    enemies.splice(index, 1);
+                                }
+                            }, 100);
+                            
+                            if (enemiesDestroyed >= enemyConfig.global.maxEnemies) {
+                                if (levelConfigs[currentLevel + 1]) {
+                                    // Start level transition
+                                    levelTransition = true;
+                                    setTimeout(nextLevel, 2500); // 2.5 second pause
+                                } else {
+                                    // All levels complete - true victory
+                                    gameWon = true;
+                                }
+                            }
+                            
+                            break;
+                        }
+                    }
+                }
+                
+                if (bulletHit) continue;
+                
+                // Remove bullets that go off screen (normal bullets only go up, deflected can go anywhere)
+                if (bullets[i].deflected) {
+                    if (bullets[i].x < -10 || bullets[i].x > canvas.width + 10 || 
+                        bullets[i].y < -10 || bullets[i].y > canvas.height + 10) {
+                        bullets.splice(i, 1);
+                    }
+                } else {
+                    if (bullets[i].y < 0) {
+                        bullets.splice(i, 1);
+                    }
+                }
+            }
+            
+            // Update enemy bullets
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                const bullet = enemyBullets[i];
+                bullet.x += bullet.vx;
+                bullet.y += bullet.vy;
+                
+                // Check collision with player
+                if (!playerInvulnerable && checkEnhancedCollision(bullet, player)) {
+                    handlePlayerDeath();
+                    enemyBullets.splice(i, 1);
+                    continue;
+                }
+                
+                // Remove bullet if it goes off screen
+                if (bullet.x < -10 || bullet.x > canvas.width + 10 || 
+                    bullet.y < -10 || bullet.y > canvas.height + 10) {
+                    enemyBullets.splice(i, 1);
+                }
+            }
+            
+            // Update visual effects
+            visualEffects.updateStarfield();
+            visualEffects.updateExplosions();
+        }
+        
+        // Draw everything
+        function draw() {
+            // Clear screen and draw starfield
+            visualEffects.clearScreen();
+            visualEffects.drawStarfield();
+            
+            // If game is quit, only show starfield and game over text
+            if (gameQuit) {
+                visualEffects.showOverlay('gameOver', { score });
+                return;
+            }
+            
+            // Level transition screen
+            if (levelTransition) {
+                visualEffects.showOverlay('levelTransition', { 
+                    levelName: enemyConfig.name, 
+                    score 
+                });
+                return;
+            }
+            
+            // Draw game objects
+            visualEffects.drawPlayer(player, playerInvulnerable);
+            visualEffects.drawPlayerLives(playerLives);
+            visualEffects.drawEnemies(enemies);
+            visualEffects.drawBullets(bullets);
+            visualEffects.drawEnemyBullets(enemyBullets);
+            visualEffects.drawExplosions();
+            
+            // Only show debug info if debug mode is enabled
+            if (debugMode) {
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '12px Courier New';
+                ctx.textAlign = 'left';
+                const aliveEnemies = enemies.filter(e => e.alive).length;
+                const remainingToKill = enemyConfig.global.maxEnemies - enemiesDestroyed;
+                const currentTime = (Date.now() - gameStartTime - totalPausedTime) / 1000;
+                const timeWindow = enemyConfig.global.spawnTimeWindow;
+                
+                let debugY = canvas.height - 90;
+                
+                // Show teleport status if active
+                if (teleportActive) {
+                    ctx.fillStyle = '#ffff00';
+                    ctx.fillText(`TELEPORT: j${teleportInput}_ (Enter to confirm, Esc to cancel)`, 10, debugY);
+                    debugY += 15;
+                    ctx.fillStyle = '#ffffff';
+                }
+                
+                ctx.fillText(`DEBUG: Spawned: ${totalEnemiesCreated}/${enemyConfig.global.maxEnemies}`, 10, debugY);
+                ctx.fillText(`Schedule: ${nextSpawnIndex}/${spawnSchedule.length} | Time: ${currentTime.toFixed(1)}s/${timeWindow}s`, 10, debugY + 15);
+                ctx.fillText(`Alive: ${aliveEnemies} | Killed: ${enemiesDestroyed}`, 10, debugY + 30);
+                ctx.fillText(`Remaining: ${remainingToKill}`, 10, debugY + 45);
+                ctx.fillText(`Total Enemies Array: ${enemies.length}`, 10, debugY + 60);
+                ctx.fillText(`Level: ${currentLevel} (${enemyConfig.name}) | j<num><enter> to teleport`, 10, debugY + 75);
+                
+                // Show force field status for type 4 enemies
+                const type4Enemies = enemies.filter(e => e.alive && e.type === 4);
+                if (type4Enemies.length > 0) {
+                    const activeForceFields = [];
+                    type4Enemies.forEach((enemy, index) => {
+                        if (enemy.forceField && enemy.forceField.active) {
+                            const timeRemaining = Math.max(0, enemy.forceField.duration - (Date.now() - enemy.forceField.activationStartTime)) / 1000;
+                            activeForceFields.push(`#${enemies.indexOf(enemy)} (${timeRemaining.toFixed(1)}s)`);
+                        }
+                    });
+                    
+                    if (activeForceFields.length > 0) {
+                        ctx.fillStyle = '#00ffff'; // Cyan color for force field info
+                        ctx.fillText(`Force Fields Active: ${activeForceFields.join(', ')}`, 10, debugY + 90);
+                        ctx.fillStyle = '#ffffff'; // Reset to white
+                    } else {
+                        ctx.fillStyle = '#888888'; // Gray for inactive
+                        ctx.fillText(`Force Fields: None active (${type4Enemies.length} type-4 enemies present)`, 10, debugY + 90);
+                        ctx.fillStyle = '#ffffff'; // Reset to white
+                    }
+                }
+            }
+            
+            // Show overlay screens
+            if (paused) {
+                visualEffects.showOverlay('paused');
+            } else if (gameWon) {
+                visualEffects.showOverlay('victory', { score });
+            } else if (!gameQuit && !levelTransition) {
+                // Hide overlays when game is running normally
+                visualEffects.hideAllOverlays();
+            }
+        }
+        
+        // Main game loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Start the game
+        
+        // Initialize game on start button click
+        startButton.addEventListener('click', () => {
+            if (!soundManager.audioContext) {
+                soundManager.initAudio();
+            }
+            startOverlay.style.display = 'none';
+            gameStarted = true;
+            
+            // Initialize game timing and spawn schedule when game actually starts
+            gameStartTime = Date.now();
+            spawnSchedule = generateSpawnSchedule(enemyConfig);
+            nextSpawnIndex = 0;
+        });
+        
+        // High scores button click
+        document.getElementById('viewHighScoresButton').addEventListener('click', () => {
+            // Hide start overlay when viewing high scores from start screen
+            startOverlay.style.display = 'none';
+            
+            highScoreManager.showHighScores(() => {
+                // Show start overlay again when high scores are closed
+                if (!gameStarted) {
+                    startOverlay.style.display = 'flex';
+                }
+            });
+        });
+        
+        updateLevelDisplay();
+        updateProgressBar();
+        
+        gameLoop();
+        
+        // Quit game function
+        function quitGame() {
+            const confirmed = confirm('Are you sure you want to quit the game?');
+            if (confirmed) {
+                checkForHighScore();
+            }
+        }
+        
+        // Check if current score qualifies for high score table
+        function checkForHighScore() {
+            // Prevent multiple high score checks in the same game session
+            if (highScoreChecked) {
+                finalizeGameQuit();
+                return;
+            }
+            
+            highScoreChecked = true;  // Mark that we've checked high scores
+            
+            if (highScoreManager.isHighScore(score)) {
+                console.log('Qualifying high score detected:', score, 'Level:', currentLevel);
+                // Show high score entry form
+                highScoreManager.showHighScoreEntry(score, currentLevel, (submitted, rank) => {
+                    if (submitted) {
+                        console.log(`New high score submitted! Rank: ${rank}`);
+                        // Optionally show the high scores table
+                        setTimeout(() => {
+                            highScoreManager.showHighScores(() => {
+                                finalizeGameQuit();
+                            });
+                        }, 500);
+                    } else {
+                        finalizeGameQuit();
+                    }
+                });
+            } else {
+                console.log('Score does not qualify for high scores:', score);
+                finalizeGameQuit();
+            }
+        }
+        
+        // Finalize the game quit process
+        function finalizeGameQuit() {
+            gameQuit = true;
+            paused = false; // Make sure the starfield keeps moving
+        }
+        
+        // Handle player death
+        function handlePlayerDeath() {
+            playerLives--;
+            createExplosion(player.x + player.width / 2, player.y + player.height / 2);
+            soundManager.playExplosionSound();
+            
+            if (playerLives <= 0) {
+                checkForHighScore();
+                return;
+            }
+            
+            // Respawn player
+            player.x = player.respawnX;
+            player.y = player.respawnY;
+            player.velocityX = 0;  // Reset x velocity on respawn
+            player.velocityY = 0;  // Reset y velocity on respawn
+            playerInvulnerable = true;
+            playerInvulnerableTime = Date.now();
+            
+            // Clear bullets
+            bullets.length = 0;
+        }
+    </script>
+</body>
+</html>

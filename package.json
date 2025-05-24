@@ -1,0 +1,34 @@
+{
+  "name": "stellardefense",
+  "version": "1.0.0",
+  "description": "A classic space shooter game built with HTML5 Canvas and JavaScript, inspired by retro arcade games like Galaga.",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "serve": "npx http-server -p 8000",
+    "dev": "python3 -m http.server 8000"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mike4330/stellardefense.git"
+  },
+  "keywords": [
+    "game",
+    "javascript",
+    "html5",
+    "canvas",
+    "space-shooter",
+    "galaga",
+    "arcade",
+    "retro"
+  ],
+  "author": "Mike4330",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/mike4330/stellardefense/issues"
+  },
+  "homepage": "https://github.com/mike4330/stellardefense#readme",
+  "engines": {
+    "node": ">=12.0.0"
+  }
+} 
