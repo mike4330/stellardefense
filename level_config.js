@@ -10,7 +10,6 @@
  *     global: {                  // Global level settings
  *       maxEnemies: number,      // Maximum number of enemies allowed in the level
  *       spawnTimeWindow: number, // Time window in seconds to spawn all enemies
-
  *       collisionSeparation: number, // Force applied to separate colliding enemies
  *       wrapBuffer: number,      // Distance from top before enemies wrap around
  *       speedMultiplier: number, // Multiplier applied to all enemy speeds
@@ -22,26 +21,26 @@
 const levelConfigs = {
     1: {
         name: "1 Alfa",
-        allowedEnemyTypes: [1,2],
+        allowedEnemyTypes: [1, 2],
         global: {
             maxEnemies: 20,
-            spawnTimeWindow: 45.0,  // 30 seconds to spawn all enemies
+            spawnTimeWindow: 45.0,
             collisionSeparation: 2.0,
             wrapBuffer: 50,
-            speedMultiplier: 1.1,
-            eccentricityMultiplier: .6  // Base eccentricity
+            speedMultiplier: 1.02,
+            eccentricityMultiplier: 0.6
         }
     },
     2: {
         name: "1 Bravo",
-        allowedEnemyTypes: [1,2],
+        allowedEnemyTypes: [1, 2],
         global: {
             maxEnemies: 27,
-            spawnTimeWindow: 46.8,  // 35 seconds to spawn all enemies
+            spawnTimeWindow: 46.8,
             collisionSeparation: 2.2,
             wrapBuffer: 60,
-            speedMultiplier: 1.21,
-            eccentricityMultiplier: 1.5  // More erratic movement
+            speedMultiplier: 1.24,
+            eccentricityMultiplier: 0.89
         }
     },
     3: {
@@ -49,11 +48,11 @@ const levelConfigs = {
         allowedEnemyTypes: [1, 2, 3],
         global: {
             maxEnemies: 32,
-            spawnTimeWindow: 48.7,  // 40 seconds to spawn all enemies
-            collisionSeparation: 2.5,
+            spawnTimeWindow: 48.7,
+            collisionSeparation: 2.4,
             wrapBuffer: 70,
-            speedMultiplier: 1.33,
-            eccentricityMultiplier: 1.11  // Even more erratic movement
+            speedMultiplier: 1.4,
+            eccentricityMultiplier: 1.11
         }
     },
     4: {
@@ -61,11 +60,11 @@ const levelConfigs = {
         allowedEnemyTypes: [1, 2, 3],
         global: {
             maxEnemies: 37,
-            spawnTimeWindow: 50.6,  // 45 seconds to spawn all enemies
-            collisionSeparation: 2.5,
+            spawnTimeWindow: 50.6,
+            collisionSeparation: 2.6,
             wrapBuffer: 70,
-            speedMultiplier: 1.46,
-            eccentricityMultiplier: 1.3  // Even more erratic movement
+            speedMultiplier: 1.54,
+            eccentricityMultiplier: 1.3
         }
     },
     5: {
@@ -73,100 +72,99 @@ const levelConfigs = {
         allowedEnemyTypes: [1, 2, 3, 4],
         global: {
             maxEnemies: 41,
-            spawnTimeWindow: 30.9,  // 50 seconds to spawn all enemies
-
-            collisionSeparation: 3.0,
+            spawnTimeWindow: 30.9,
+            collisionSeparation: 2.8,
             wrapBuffer: 80,
-            speedMultiplier: 1.61,
-            eccentricityMultiplier: 1.47  // Maximum erratic movement
+            speedMultiplier: 1.66,
+            eccentricityMultiplier: 1.47
         }
     },
     6: {
         name: "1 Foxtrot",
         allowedEnemyTypes: [1, 2, 3, 4],
         global: {
-            maxEnemies: 45,         // 30 * 1.1 = 33
-            spawnTimeWindow: 54.7,  // 50 * 1.1 = 55 seconds to spawn all enemies
-            collisionSeparation: 3.3,  // 3.0 * 1.1 = 3.3
-            wrapBuffer: 88,            // 80 * 1.1 = 88
-            speedMultiplier: 1.77,      // 2.0 * 1.1 = 2.2
-            eccentricityMultiplier: 1.61  // 3.0 * 1.1 = 3.3 (even more chaotic movement)
+            maxEnemies: 45,
+            spawnTimeWindow: 54.7,
+            collisionSeparation: 3.0,
+            wrapBuffer: 88,
+            speedMultiplier: 1.77,
+            eccentricityMultiplier: 1.61
         }
     },
     7: {
         name: "1 Golf",
         allowedEnemyTypes: [1, 2, 3, 4, 5],
         global: {
-            maxEnemies: 48,         // 30 * 1.1 = 33
-            spawnTimeWindow: 56.9,  // 50 * 1.1 = 55 seconds to spawn all enemies
-            collisionSeparation: 3.3,  // 3.0 * 1.1 = 3.3
-            wrapBuffer: 88,            // 80 * 1.1 = 88
-            speedMultiplier: 1.95,      // 2.0 * 1.1 = 2.2
-            eccentricityMultiplier: 1.75  // 3.0 * 1.1 = 3.3 (even more chaotic movement)
+            maxEnemies: 48,
+            spawnTimeWindow: 56.9,
+            collisionSeparation: 3.2,
+            wrapBuffer: 88,
+            speedMultiplier: 1.88,
+            eccentricityMultiplier: 1.75
         }
     },
     8: {
         name: "2 Alpha",
         allowedEnemyTypes: [1, 2, 3, 4, 5],
         global: {
-            maxEnemies: 51,         // 30 * 1.1 = 33
-            spawnTimeWindow: 59.2,  // 50 * 1.1 = 55 seconds to spawn all enemies
-            collisionSeparation: 3.3,  // 3.0 * 1.1 = 3.3
-            wrapBuffer: 88,            // 80 * 1.1 = 88
-            speedMultiplier: 2.14,      // 2.0 * 1.1 = 2.2
-            eccentricityMultiplier: 1.88,  // 3.0 * 1.1 = 3.3 (even more chaotic movement)
-            scoreBonus: 10  // Bonus points added to all enemy scores
+            maxEnemies: 51,
+            spawnTimeWindow: 59.2,
+            collisionSeparation: 3.4,
+            wrapBuffer: 88,
+            speedMultiplier: 1.97,
+            eccentricityMultiplier: 1.88,
+            scoreBonus: 10
         }
     },
     9: {
         name: "2 Bravo",
-        allowedEnemyTypes: [1,2, 3, 4, 5,6],
+        allowedEnemyTypes: [1, 2, 3, 4, 5, 6],
         global: {
             maxEnemies: 54,
             spawnTimeWindow: 61.6,
             collisionSeparation: 3.6,
             wrapBuffer: 95,
-            speedMultiplier: 2.35,
-            eccentricityMultiplier: 2.03,
+            speedMultiplier: 2.06,
+            eccentricityMultiplier: 2.0,
             scoreBonus: 10
         }
     },
     10: {
         name: "2 Charlie",
-        allowedEnemyTypes: [1,2, 3, 4, 5,6],
+        allowedEnemyTypes: [1, 2, 3, 4, 5, 6],
         global: {
             maxEnemies: 57,
             spawnTimeWindow: 64.1,
             collisionSeparation: 3.9,
             wrapBuffer: 102,
-            speedMultiplier: 2.59,
-            eccentricityMultiplier: 2.20,
+            speedMultiplier: 2.14,
+            eccentricityMultiplier: 2.11,
             scoreBonus: 10
         }
     },
     11: {
         name: "2 Delta",
-        allowedEnemyTypes: [2,3, 4, 5,6],
+        allowedEnemyTypes: [2, 3, 4, 5, 6],
         global: {
             maxEnemies: 60,
             spawnTimeWindow: 66.7,
             collisionSeparation: 4.2,
             wrapBuffer: 110,
-            speedMultiplier: 2.85,
-            eccentricityMultiplier: 2.38,
+            speedMultiplier: 2.22,
+            eccentricityMultiplier: 2.22,
             scoreBonus: 10
         }
     },
     12: {
         name: "2 Echo",
-        allowedEnemyTypes: [2,3, 4, 5, 6],
+        allowedEnemyTypes: [2, 3, 4, 5, 6],
         global: {
             maxEnemies: 63,
             spawnTimeWindow: 69.4,
             collisionSeparation: 4.6,
             wrapBuffer: 118,
-            speedMultiplier: 3.14,
-            eccentricityMultiplier: 2.58,
+            speedMultiplier: 2.3,
+            eccentricityMultiplier: 2.32,
             scoreBonus: 10
         }
     },
@@ -178,8 +176,8 @@ const levelConfigs = {
             spawnTimeWindow: 72.2,
             collisionSeparation: 5.0,
             wrapBuffer: 125,
-            speedMultiplier: 3.45,
-            eccentricityMultiplier: 2.79,
+            speedMultiplier: 2.37,
+            eccentricityMultiplier: 2.42,
             scoreBonus: 10
         }
     },
@@ -188,11 +186,11 @@ const levelConfigs = {
         allowedEnemyTypes: [3, 4, 5, 6],
         global: {
             maxEnemies: 69,
-            spawnTimeWindow: 75.1,
+            spawnTimeWindow: 72.3,
             collisionSeparation: 5.5,
             wrapBuffer: 133,
-            speedMultiplier: 3.80,
-            eccentricityMultiplier: 3.02,
+            speedMultiplier: 2.45,
+            eccentricityMultiplier: 2.52,
             scoreBonus: 10
         }
     }
