@@ -146,6 +146,9 @@
         // Current level config
         let enemyConfig = levelConfigs[currentLevel];
         
+        // Initialize enemy manager with level config
+        enemyManager.initializeLevel(enemyConfig);
+        
 
         
         // Player ship
@@ -283,28 +286,6 @@
         
 
         
-        // Circular collision detection for type 4 enemies
-        function checkCircularCollision(circle, rect) {
-            // Get circle center and radius
-            const circleX = circle.x + circle.width / 2;
-            const circleY = circle.y + circle.height / 2;
-            const radius = circle.width / 2; // Assuming circular shape with radius = width/2
-            
-            // Get rectangle center
-            const rectCenterX = rect.x + rect.width / 2;
-            const rectCenterY = rect.y + rect.height / 2;
-            
-            // Calculate distance between centers
-            const dx = circleX - rectCenterX;
-            const dy = circleY - rectCenterY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            // Check if distance is less than radius (treating other object as a point for simplicity)
-            // For bullets and small objects, this works well
-            const otherRadius = Math.min(rect.width, rect.height) / 2;
-            return distance < (radius + otherRadius);
-        }
-        
         // Enhanced collision check that handles both rectangular and circular collision
         function checkEnhancedCollision(obj1, obj2) {
             // Check if either object is a type 4 enemy (circular collision)
@@ -312,9 +293,9 @@
             const obj2IsType4 = obj2.type === 4;
             
             if (obj1IsType4 && !obj2IsType4) {
-                return checkCircularCollision(obj1, obj2);
+                return enemyManager.checkCircularCollision(obj1, obj2);
             } else if (obj2IsType4 && !obj1IsType4) {
-                return checkCircularCollision(obj2, obj1);
+                return enemyManager.checkCircularCollision(obj2, obj1);
             } else if (obj1IsType4 && obj2IsType4) {
                 // Both are type 4, use circle-to-circle collision
                 const center1X = obj1.x + obj1.width / 2;
@@ -381,69 +362,7 @@
             document.getElementById('progressFill').style.width = progressPercentage + '%';
         }
         
-        // Create new enemy
-        function createEnemy(type = 1) {
-            // Play spawn sound
-            soundManager.playSpawnSound();
-            
-            // Determine enemy type based on level and spawn chances
-            let enemyType = type;
-            let config;
-            
-            if (type === 1) {
-                // Random type selection for automatic spawning
-                const allowedTypes = enemyConfig.allowedEnemyTypes;
-                
-                // Randomly pick from allowed types
-                enemyType = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
-                config = enemyManager.getEnemyBaseConfig()[`type${enemyType}`];
-            } else {
-                // Specific type requested - check if it's allowed
-                if (enemyConfig.allowedEnemyTypes.includes(type)) {
-                    config = enemyManager.getEnemyBaseConfig()[`type${type}`];
-                } else {
-                    // Fallback to first allowed type
-                    enemyType = enemyConfig.allowedEnemyTypes[0];
-                    config = enemyManager.getEnemyBaseConfig()[`type${enemyType}`];
-                }
-            }
-            
-            // Apply level speed multiplier
-            const speedMultiplier = enemyConfig.global.speedMultiplier || 1.0;
-            
-            const enemy = {
-                x: Math.random() * (canvas.width - config.width),
-                y: Math.random() * -50 - 20,  // Spawn closer to top of screen
-                width: config.width,
-                height: config.height,
-                speedX: (Math.random() * (config.speedX.max - config.speedX.min) + config.speedX.min) * speedMultiplier,
-                speedY: (Math.random() * (config.speedY.max - config.speedY.min) + config.speedY.min) * speedMultiplier,
-                direction: Math.random() > 0.5 ? 1 : -1,
-                directionY: 1,  // Start moving downward
-                alive: true,
-                type: enemyType
-            };
-            
-            // Add rotation for type 5 enemies to match their direction of travel
-            if (enemyType === 5) {
-                const vx = enemy.speedX * enemy.direction;
-                const vy = enemy.speedY * enemy.directionY;
-                enemy.rotation = Math.atan2(vy, vx) - Math.PI/2;
-            }
-            
-            // Add force field properties for type 4 enemies
-            if (enemyType === 4) {
-                enemy.forceField = {
-                    active: false,
-                    nextActivationTime: Math.random() * 10000 + 5000, // Random delay 5-15 seconds
-                    duration: 30000, // 30 seconds
-                    activationChance: 0.20, // 20% chance
-                    lastCheckTime: Date.now()
-                };
-            }
-            
-            return enemy;
-        }
+
         
         // Spawn enemies based on schedule
         function spawnEnemies() {
@@ -457,9 +376,9 @@
             while (nextSpawnIndex < spawnSchedule.length) {
                 const spawn = spawnSchedule[nextSpawnIndex];
                 
-                if (!spawn.spawned && currentTime >= spawn.spawnTime) {
-                    enemies.push(createEnemy());
-                    spawn.spawned = true;
+                            if (!spawn.spawned && currentTime >= spawn.spawnTime) {
+                enemies.push(enemyManager.createEnemy());
+                spawn.spawned = true;
                     totalEnemiesCreated++;
                     nextSpawnIndex++;
                 } else {
@@ -493,6 +412,9 @@
             
             enemyConfig = levelConfigs[currentLevel];
             
+            // Initialize enemy manager with level config
+            enemyManager.initializeLevel(enemyConfig);
+            
             // Update visual effects level
             visualEffects.setCurrentLevel(currentLevel);
             
@@ -518,6 +440,10 @@
             currentLevel++;
             if (levelConfigs[currentLevel]) {
                 enemyConfig = levelConfigs[currentLevel];
+                
+                // Initialize enemy manager with level config
+                enemyManager.initializeLevel(enemyConfig);
+                
                 enemiesDestroyed = 0;
                 totalEnemiesCreated = 0;
                 gameWon = false;
@@ -555,6 +481,10 @@
             if (levelConfigs[targetLevel]) {
                 currentLevel = targetLevel;
                 enemyConfig = levelConfigs[currentLevel];
+                
+                // Initialize enemy manager with level config
+                enemyManager.initializeLevel(enemyConfig);
+                
                 enemiesDestroyed = 0;
                 totalEnemiesCreated = 0;
                 gameWon = false;

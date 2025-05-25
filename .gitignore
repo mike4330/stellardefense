@@ -55,3 +55,4 @@ coverage/
 # Build output
 dist/
 build/ 
+__pycache__/galaga_level_editor.cpython-311.pyc
