@@ -141,69 +141,7 @@
         let spawnSchedule = [];
         let nextSpawnIndex = 0;  // Track which spawn is next to process
         
-        // Base enemy configurations
-        const enemyBaseConfig = {
-            type1: {
-                speedX: { min: 1.0, max: 2.5 },
-                speedY: { min: 0.6, max: 1.2 },
-                points: 20,
-                respawnDelay: 750,
-                width: 22,
-                height: 22,
-                directionChangeProbability: 0.001,  // 2% chance per frame
-                reverseMovementProbability: 0.0  // No reverse movement
-            },
-            type2: {
-                speedX: { min: 0.5, max: 1.5 },
-                speedY: { min: 0.7, max: 1.3 },
-                points: 30,
-                respawnDelay: 950,
-                width: 26,
-                height: 26,
-                directionChangeProbability: 0.002,  // 1.5% chance per frame
-                reverseMovementProbability: 0.0  // No reverse movement
-            },
-            type3: {
-                speedX: { min: 1.0, max: 2.0 },
-                speedY: { min: .8, max: 1.4 },
-                points: 45,
-                respawnDelay: 975,
-                width: 30,
-                height: 30,
-                directionChangeProbability: 0.004,  // 2.5% chance per frame
-                reverseMovementProbability: 0.0  // No reverse movement
-            },
-            type4: {
-                speedX: { min: 0.8, max: 1.8 },
-                speedY: { min: 0.9, max: 1.5 },
-                points: 60,
-                respawnDelay: 1100,
-                width: 32,
-                height: 32,
-                directionChangeProbability: 0.006,  // 3% chance per frame (more erratic)
-                reverseMovementProbability: 0.003  // 0.3% chance to move backward (unique to type 4!)
-            },
-            type5: {
-                speedX: { min: 1.2, max: 2.2 },
-                speedY: { min: 1.0, max: 1.6 },
-                points: 75,
-                respawnDelay: 1200,
-                width: 28,
-                height: 28,
-                directionChangeProbability: 0.008,  // 4% chance per frame (very erratic)
-                reverseMovementProbability: 0.0  // No reverse movement
-            },
-            type6: {
-                speedX: { min: 1.0, max: 2.0 },
-                speedY: { min: 1.1, max: 1.7 },
-                points: 90,
-                respawnDelay: 1300,
-                width: 34,
-                height: 34,
-                directionChangeProbability: 0.006,  // 3% chance per frame 
-                reverseMovementProbability: 0.008  // 0.8% chance to reverse Y direction (high retrograde capability)
-            }
-        };
+
         
         // Current level config
         let enemyConfig = levelConfigs[currentLevel];
@@ -398,45 +336,7 @@
             }
         }
         
-        // Check if enemies are colliding and handle avoidance
-        function handleEnemyCollision() {
-            for (let i = 0; i < enemies.length; i++) {
-                for (let j = i + 1; j < enemies.length; j++) {
-                    const enemy1 = enemies[i];
-                    const enemy2 = enemies[j];
-                    
-                    if (enemy1.alive && enemy2.alive && checkEnhancedCollision(enemy1, enemy2)) {
-                        const centerX1 = enemy1.x + enemy1.width / 2;
-                        const centerY1 = enemy1.y + enemy1.height / 2;
-                        const centerX2 = enemy2.x + enemy2.width / 2;
-                        const centerY2 = enemy2.y + enemy2.height / 2;
-                        
-                        const dx = centerX1 - centerX2;
-                        const dy = centerY1 - centerY2;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-                        
-                        if (distance > 0) {
-                            const separationForce = enemyConfig.global.collisionSeparation;
-                            const separationX = (dx / distance) * separationForce;
-                            const separationY = (dy / distance) * separationForce;
-                            
-                            enemy1.x += separationX;
-                            enemy1.y += separationY;
-                            enemy2.x -= separationX;
-                            enemy2.y -= separationY;
-                            
-                            enemy1.x = Math.max(0, Math.min(canvas.width - enemy1.width, enemy1.x));
-                            enemy1.y = Math.max(0, Math.min(canvas.height - enemy1.height, enemy1.y));
-                            enemy2.x = Math.max(0, Math.min(canvas.width - enemy2.width, enemy2.x));
-                            enemy2.y = Math.max(0, Math.min(canvas.height - enemy2.height, enemy2.y));
-                            
-                            enemy1.direction *= -1;
-                            enemy2.direction *= -1;
-                        }
-                    }
-                }
-            }
-        }
+
         
         // Create explosion effect
         function createExplosion(x, y) {
@@ -496,15 +396,15 @@
                 
                 // Randomly pick from allowed types
                 enemyType = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
-                config = enemyBaseConfig[`type${enemyType}`];
+                config = enemyManager.getEnemyBaseConfig()[`type${enemyType}`];
             } else {
                 // Specific type requested - check if it's allowed
                 if (enemyConfig.allowedEnemyTypes.includes(type)) {
-                    config = enemyBaseConfig[`type${type}`];
+                    config = enemyManager.getEnemyBaseConfig()[`type${type}`];
                 } else {
                     // Fallback to first allowed type
                     enemyType = enemyConfig.allowedEnemyTypes[0];
-                    config = enemyBaseConfig[`type${enemyType}`];
+                    config = enemyManager.getEnemyBaseConfig()[`type${enemyType}`];
                 }
             }
             
@@ -806,7 +706,7 @@
                 const enemy = enemies[i];
                 if (enemy.alive) {
                     // Get the base config for this enemy type
-                    const baseConfig = enemyBaseConfig[`type${enemy.type}`];
+                    const baseConfig = enemyManager.getEnemyBaseConfig()[`type${enemy.type}`];
                     
                     // Random direction change based on probability, modified by level's eccentricity
                     const eccentricityMultiplier = enemyConfig.global.eccentricityMultiplier || 1.0;
@@ -923,7 +823,8 @@
                 }
             }
             
-            handleEnemyCollision();
+            // Handle enemy collisions using the enemy manager
+            enemyManager.handleEnemyCollisionForArray(enemies, enemyConfig);
             
             for (let i = bullets.length - 1; i >= 0; i--) {
                 // Handle deflected bullets with different movement
@@ -975,24 +876,10 @@
                         } else {
                             // Normal collision - destroy enemy
                             createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
-                            let points;
-                            if (enemy.type === 5) {
-                                points = enemyBaseConfig.type5.points;
-                            } else if (enemy.type === 4) {
-                                points = enemyBaseConfig.type4.points;
-                            } else if (enemy.type === 3) {
-                                points = enemyBaseConfig.type3.points;
-                            } else if (enemy.type === 2) {
-                                points = enemyBaseConfig.type2.points;
-                            } else if (enemy.type === 6) {
-                                points = enemyBaseConfig.type6.points;
-                            } else {
-                                points = enemyBaseConfig.type1.points;
-                            }
-                            
-                            // Apply score bonus from level configuration
+                            // Get points using enemy manager (includes score bonus)
+                            const basePoints = enemyManager.getEnemyBaseConfig()[`type${enemy.type}`]?.points || enemyManager.getEnemyBaseConfig().type1.points;
                             const scoreBonus = enemyConfig.global.scoreBonus || 0;
-                            points += scoreBonus;
+                            const points = basePoints + scoreBonus;
                             
                             updateScore(points);
                             enemy.alive = false;

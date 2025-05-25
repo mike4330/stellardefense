@@ -294,6 +294,46 @@ class EnemyManager {
         }
     }
     
+    // Handle enemy collision for external enemies array (for backward compatibility)
+    handleEnemyCollisionForArray(enemies, levelConfig) {
+        for (let i = 0; i < enemies.length; i++) {
+            for (let j = i + 1; j < enemies.length; j++) {
+                const enemy1 = enemies[i];
+                const enemy2 = enemies[j];
+                
+                if (enemy1.alive && enemy2.alive && this.checkEnhancedCollision(enemy1, enemy2)) {
+                    const centerX1 = enemy1.x + enemy1.width / 2;
+                    const centerY1 = enemy1.y + enemy1.height / 2;
+                    const centerX2 = enemy2.x + enemy2.width / 2;
+                    const centerY2 = enemy2.y + enemy2.height / 2;
+                    
+                    const dx = centerX1 - centerX2;
+                    const dy = centerY1 - centerY2;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance > 0) {
+                        const separationForce = levelConfig.global.collisionSeparation;
+                        const separationX = (dx / distance) * separationForce;
+                        const separationY = (dy / distance) * separationForce;
+                        
+                        enemy1.x += separationX;
+                        enemy1.y += separationY;
+                        enemy2.x -= separationX;
+                        enemy2.y -= separationY;
+                        
+                        enemy1.x = Math.max(0, Math.min(this.canvas.width - enemy1.width, enemy1.x));
+                        enemy1.y = Math.max(0, Math.min(this.canvas.height - enemy1.height, enemy1.y));
+                        enemy2.x = Math.max(0, Math.min(this.canvas.width - enemy2.width, enemy2.x));
+                        enemy2.y = Math.max(0, Math.min(this.canvas.height - enemy2.height, enemy2.y));
+                        
+                        enemy1.direction *= -1;
+                        enemy2.direction *= -1;
+                    }
+                }
+            }
+        }
+    }
+    
     // Update all enemies
     updateEnemies(enemyBullets) {
         const now = Date.now();
@@ -464,5 +504,10 @@ class EnemyManager {
             nextSpawnIndex: this.nextSpawnIndex,
             totalScheduled: this.spawnSchedule.length
         };
+    }
+    
+    // Get enemy base configuration (for external access)
+    getEnemyBaseConfig() {
+        return this.enemyBaseConfig;
     }
 } 
