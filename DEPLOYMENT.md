@@ -9,7 +9,7 @@ This repository is configured for automatic deployment to GitHub Pages.
 1. **Enable GitHub Pages in your repository:**
    - Go to repository Settings > Pages
    - Source: "GitHub Actions"
-   - The game will be automatically deployed on every push to main branch
+   - The game will be automatically deployed on every push to master branch
 
 2. **Access your deployed game:**
    - URL: `https://mike4330.github.io/stellardefense/`
@@ -36,18 +36,18 @@ php -S localhost:8000
 **Netlify:**
 1. Fork/clone the repository
 2. Connect your GitHub account to Netlify
-3. Deploy from the main branch
+3. Deploy from the master branch
 4. Set publish directory to root (`/`)
 
 **Vercel:**
 1. Import the repository to Vercel
 2. No build configuration needed
-3. Deploy from main branch
+3. Deploy from master branch
 
 **GitHub Pages (Manual):**
 1. Go to Settings > Pages
 2. Source: Deploy from a branch
-3. Branch: main
+3. Branch: master
 4. Folder: / (root)
 
 ## 🔧 Build Configuration
