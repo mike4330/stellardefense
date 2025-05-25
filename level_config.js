@@ -24,7 +24,7 @@ const levelConfigs = {
         allowedEnemyTypes: [1, 2],
         global: {
             maxEnemies: 20,
-            spawnTimeWindow: 45.0,
+            spawnTimeWindow: 13.8,
             collisionSeparation: 2.0,
             wrapBuffer: 50,
             speedMultiplier: 1.02,
@@ -36,7 +36,7 @@ const levelConfigs = {
         allowedEnemyTypes: [1, 2],
         global: {
             maxEnemies: 27,
-            spawnTimeWindow: 46.8,
+            spawnTimeWindow: 14.5,
             collisionSeparation: 2.2,
             wrapBuffer: 60,
             speedMultiplier: 1.24,
@@ -48,7 +48,7 @@ const levelConfigs = {
         allowedEnemyTypes: [1, 2, 3],
         global: {
             maxEnemies: 32,
-            spawnTimeWindow: 48.7,
+            spawnTimeWindow: 15.1,
             collisionSeparation: 2.4,
             wrapBuffer: 70,
             speedMultiplier: 1.4,
@@ -60,7 +60,7 @@ const levelConfigs = {
         allowedEnemyTypes: [1, 2, 3],
         global: {
             maxEnemies: 37,
-            spawnTimeWindow: 50.6,
+            spawnTimeWindow: 15.6,
             collisionSeparation: 2.6,
             wrapBuffer: 70,
             speedMultiplier: 1.54,
@@ -72,7 +72,7 @@ const levelConfigs = {
         allowedEnemyTypes: [1, 2, 3, 4],
         global: {
             maxEnemies: 41,
-            spawnTimeWindow: 30.9,
+            spawnTimeWindow: 16.0,
             collisionSeparation: 2.8,
             wrapBuffer: 80,
             speedMultiplier: 1.66,
@@ -146,7 +146,7 @@ const levelConfigs = {
         name: "2 Delta",
         allowedEnemyTypes: [2, 3, 4, 5, 6],
         global: {
-            maxEnemies: 60,
+            maxEnemies: 59,
             spawnTimeWindow: 66.7,
             collisionSeparation: 4.2,
             wrapBuffer: 110,
@@ -159,7 +159,7 @@ const levelConfigs = {
         name: "2 Echo",
         allowedEnemyTypes: [2, 3, 4, 5, 6],
         global: {
-            maxEnemies: 63,
+            maxEnemies: 62,
             spawnTimeWindow: 69.4,
             collisionSeparation: 4.6,
             wrapBuffer: 118,
@@ -172,7 +172,7 @@ const levelConfigs = {
         name: "2 Foxtrot",
         allowedEnemyTypes: [3, 4, 5, 6],
         global: {
-            maxEnemies: 66,
+            maxEnemies: 64,
             spawnTimeWindow: 72.2,
             collisionSeparation: 5.0,
             wrapBuffer: 125,
@@ -183,6 +183,19 @@ const levelConfigs = {
     },
     14: {
         name: "2 Golf",
+        allowedEnemyTypes: [3, 4, 5, 6],
+        global: {
+            maxEnemies: 67,
+            spawnTimeWindow: 72.3,
+            collisionSeparation: 5.5,
+            wrapBuffer: 133,
+            speedMultiplier: 2.45,
+            eccentricityMultiplier: 2.52,
+            scoreBonus: 10
+        }
+    },
+    15: {
+        name: "3 Alfa",
         allowedEnemyTypes: [3, 4, 5, 6],
         global: {
             maxEnemies: 69,

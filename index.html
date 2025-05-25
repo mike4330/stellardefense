@@ -86,6 +86,7 @@
     <script src="sound.js"></script>
     <script src="level_config.js"></script>
     <script src="visual_effects.js"></script>
+    <script src="enemy_manager.js"></script>
     <script src="high_scores.js"></script>
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -95,6 +96,9 @@
         
         // Initialize visual effects
         const visualEffects = new VisualEffects(canvas, ctx);
+        
+        // Initialize enemy manager
+        const enemyManager = new EnemyManager(canvas, ctx, soundManager, visualEffects);
         
         // Initialize high score manager
         const highScoreManager = new HighScoreManager();
@@ -204,24 +208,7 @@
         // Current level config
         let enemyConfig = levelConfigs[currentLevel];
         
-        // Generate spawn schedule for the current level
-        function generateSpawnSchedule(levelConfig) {
-            const schedule = [];
-            
-            for (let i = 0; i < levelConfig.global.maxEnemies; i++) {
-                // Random time within the spawn window
-                const randomTime = Math.random() * levelConfig.global.spawnTimeWindow;
-                schedule.push({
-                    spawnTime: randomTime,
-                    spawned: false
-                });
-            }
-            
-            // Sort by spawn time so we can process chronologically
-            schedule.sort((a, b) => a.spawnTime - b.spawnTime);
-            
-            return schedule;
-        }
+
         
         // Player ship
         const player = {
@@ -616,7 +603,7 @@
             visualEffects.setCurrentLevel(currentLevel);
             
             // Generate new spawn schedule for this level
-            spawnSchedule = generateSpawnSchedule(enemyConfig);
+            spawnSchedule = enemyManager.generateSpawnSchedule(enemyConfig);
             nextSpawnIndex = 0;
             
             document.getElementById('scoreValue').textContent = score.toString().padStart(6, '0');
@@ -651,7 +638,7 @@
                 visualEffects.setCurrentLevel(currentLevel);
                 
                 // Generate new spawn schedule for this level
-                spawnSchedule = generateSpawnSchedule(enemyConfig);
+                spawnSchedule = enemyManager.generateSpawnSchedule(enemyConfig);
                 nextSpawnIndex = 0;
                 
                 updateLevelDisplay();
@@ -688,7 +675,7 @@
                 visualEffects.setCurrentLevel(currentLevel);
                 
                 // Generate new spawn schedule for this level
-                spawnSchedule = generateSpawnSchedule(enemyConfig);
+                spawnSchedule = enemyManager.generateSpawnSchedule(enemyConfig);
                 nextSpawnIndex = 0;
                 
                 updateLevelDisplay();
@@ -1192,7 +1179,7 @@
             
             // Initialize game timing and spawn schedule when game actually starts
             gameStartTime = Date.now();
-            spawnSchedule = generateSpawnSchedule(enemyConfig);
+            spawnSchedule = enemyManager.generateSpawnSchedule(enemyConfig);
             nextSpawnIndex = 0;
         });
         
