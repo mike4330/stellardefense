@@ -69,8 +69,8 @@ class EnemyManager {
                 speedY: { min: 1.1, max: 1.7 },
                 points: 90,
                 respawnDelay: 1300,
-                width: 34,
-                height: 34,
+                width: 30,
+                height: 30,
                 directionChangeProbability: 0.006,  // 3% chance per frame 
                 reverseMovementProbability: 0.008  // 0.8% chance to reverse Y direction (high retrograde capability)
             }

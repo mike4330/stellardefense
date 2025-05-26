@@ -18,6 +18,11 @@ class SoundManager {
 playBulletSound() {
     if (!this.audioContext) return;
     
+    // Create reverb impulse response if it doesn't exist
+    if (!this.reverbBuffer) {
+        this.reverbBuffer = this.createReverbImpulse(0.3, 0.02); // 0.3s decay, 0.02 decay factor
+    }
+    
     // Create two oscillators for stereo width
     const oscillatorL = this.audioContext.createOscillator();
     const oscillatorR = this.audioContext.createOscillator();
@@ -26,20 +31,39 @@ playBulletSound() {
     const pannerL = this.audioContext.createStereoPanner();
     const pannerR = this.audioContext.createStereoPanner();
     
+    // Create reverb
+    const convolver = this.audioContext.createConvolver();
+    const reverbGain = this.audioContext.createGain();
+    const dryGain = this.audioContext.createGain();
+    const outputGain = this.audioContext.createGain();
+    
+    convolver.buffer = this.reverbBuffer;
+    reverbGain.gain.setValueAtTime(0.25, this.audioContext.currentTime); // Light reverb
+    dryGain.gain.setValueAtTime(0.75, this.audioContext.currentTime);   // Mostly dry
+    
     // Connect left channel
     oscillatorL.connect(gainNodeL);
     gainNodeL.connect(pannerL);
-    pannerL.connect(this.audioContext.destination);
     
     // Connect right channel
     oscillatorR.connect(gainNodeR);
     gainNodeR.connect(pannerR);
-    pannerR.connect(this.audioContext.destination);
+    
+    // Mix panners to output and reverb
+    pannerL.connect(dryGain);
+    pannerR.connect(dryGain);
+    pannerL.connect(convolver);
+    pannerR.connect(convolver);
+    
+    // Connect reverb and dry signals to output
+    convolver.connect(reverbGain);
+    dryGain.connect(outputGain);
+    reverbGain.connect(outputGain);
+    outputGain.connect(this.audioContext.destination);
     
     // Set up oscillators
     oscillatorL.type = 'square';
     oscillatorR.type = 'square';
-
     const rampstart = 150;
     const rampsize= -65;
     const detune = 10;
@@ -52,9 +76,15 @@ playBulletSound() {
     oscillatorR.frequency.setValueAtTime(rampstart+detune, this.audioContext.currentTime);
     oscillatorR.frequency.linearRampToValueAtTime(rampstart+rampsize+detune, this.audioContext.currentTime + 0.2);
     
-    // Pan to stereo positions
-    pannerL.pan.setValueAtTime(-0.6, this.audioContext.currentTime); // Left
-    pannerR.pan.setValueAtTime(0.6, this.audioContext.currentTime);  // Right
+    // Narrower random base position, then space channels apart
+    const basePan = (Math.random() * 0.8 - 0.4); // Range from -0.4 to 0.4
+    const spacing = 0.2; // Distance between channels
+    
+    const panL = basePan - spacing;
+    const panR = basePan + spacing;
+    
+    pannerL.pan.setValueAtTime(panL, this.audioContext.currentTime);
+    pannerR.pan.setValueAtTime(panR, this.audioContext.currentTime);
     
     // Set up gain envelopes
     gainNodeL.gain.setValueAtTime(0.08, this.audioContext.currentTime);
@@ -71,6 +101,22 @@ playBulletSound() {
     oscillatorR.stop(this.audioContext.currentTime + 0.2);
 }
 
+// Helper method to create reverb impulse response
+createReverbImpulse(duration, decay) {
+    const sampleRate = this.audioContext.sampleRate;
+    const length = sampleRate * duration;
+    const impulse = this.audioContext.createBuffer(2, length, sampleRate);
+    
+    for (let channel = 0; channel < 2; channel++) {
+        const channelData = impulse.getChannelData(channel);
+        for (let i = 0; i < length; i++) {
+            const envelope = Math.pow(1 - i / length, decay);
+            channelData[i] = (Math.random() * 2 - 1) * envelope;
+        }
+    }
+    
+    return impulse;
+}
     // Play explosion sound effect
     playExplosionSound() {
         if (!this.audioContext) return;
@@ -129,25 +175,37 @@ playBulletSound() {
     }
 
     // Play enemy bullet sound effect (lower pitched, more threatening)
-    playEnemyBulletSound() {
-        if (!this.audioContext) return;
-        
-        const oscillator = this.audioContext.createOscillator();
-        const gainNode = this.audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
-        
-        oscillator.type = 'sawtooth';
-        oscillator.frequency.setValueAtTime(80, this.audioContext.currentTime);
-        oscillator.frequency.linearRampToValueAtTime(40, this.audioContext.currentTime + 0.15);
-        
-        gainNode.gain.setValueAtTime(0.15, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.15);
-        
-        oscillator.start(this.audioContext.currentTime);
-        oscillator.stop(this.audioContext.currentTime + 0.15);
-    }
+playEnemyBulletSound() {
+    if (!this.audioContext) return;
+    
+    // Sound parameters - easy to adjust
+    const params = {
+        waveType: 'sawtooth',
+        startFreq: 70,
+        endFreq: 25,
+        startVolume: 0.15,
+        endVolume: 0.005,
+        duration: 0.45,
+        rampDuration: 0.45
+    };
+    
+    const oscillator = this.audioContext.createOscillator();
+    const gainNode = this.audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(this.audioContext.destination);
+    
+    // Apply parameters
+    oscillator.type = params.waveType;
+    oscillator.frequency.setValueAtTime(params.startFreq, this.audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(params.endFreq, this.audioContext.currentTime + params.rampDuration);
+    
+    gainNode.gain.setValueAtTime(params.startVolume, this.audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(params.endVolume, this.audioContext.currentTime + params.rampDuration);
+    
+    oscillator.start(this.audioContext.currentTime);
+    oscillator.stop(this.audioContext.currentTime + params.duration);
+}
 }
 
 // Create global sound manager instance

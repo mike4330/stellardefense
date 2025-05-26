@@ -156,7 +156,11 @@ class VisualEffects {
         
         // Add blue overlay for levels 8-14 to create "different place" effect
         if (this.currentLevel >= 8 && this.currentLevel <= 14) {
-            this.ctx.fillStyle = 'rgba(31, 31, 220, 0.3)'; // #3333ee with 30% opacity
+            this.ctx.fillStyle = 'rgba(31, 31, 160, 0.21)'; 
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+        if (this.currentLevel >= 15 && this.currentLevel <= 16) {
+            this.ctx.fillStyle = 'rgba(31, 155, 31, 0.13)'; 
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         }
     }
