@@ -1,4 +1,28 @@
-// Enemy Manager - Handles all enemy-related functionality
+/**
+ * Enemy Manager - Handles all enemy-related functionality
+ * 
+ * ENEMY CONFIGURATION PARAMETERS:
+ * 
+ * speedX/speedY: { min, max } - Range of horizontal/vertical movement speeds
+ * points: number - Base score points awarded when enemy is destroyed
+ * respawnDelay: number - Milliseconds before enemy can respawn (currently unused)
+ * width/height: number - Enemy collision box dimensions in pixels
+ * directionChangeProbability: number - Per-frame probability (0.0-1.0) of switching to homing behavior
+ * reverseMovementProbability: number - Per-frame probability (0.0-1.0) of reversing Y-direction movement
+ * 
+ * ENEMY TYPE BEHAVIORS:
+ * Type 1: Basic red diamond - simple movement patterns
+ * Type 2: Blue cross - slightly more erratic movement
+ * Type 3: Purple triangle - moderate difficulty with increased homing
+ * Type 4: Cyan star - has force field deflection ability, can reverse Y-direction
+ * Type 5: Red cross - shoots bullets, rotates to match movement direction
+ * Type 6: Orange arrow - high retrograde capability, can reverse Y-direction frequently
+ * Type 7: Purple hexagon - moderate difficulty with balanced homing and agility
+ * 
+ * LEVEL MULTIPLIERS:
+ * speedMultiplier: Applied to all enemy speeds from level config
+ * eccentricityMultiplier: Applied to direction change and reverse movement probabilities
+ */
 class EnemyManager {
     constructor(canvas, ctx, soundManager, visualEffects) {
         this.canvas = canvas;
@@ -21,8 +45,8 @@ class EnemyManager {
                 respawnDelay: 750,
                 width: 22,
                 height: 22,
-                directionChangeProbability: 0.001,  // 2% chance per frame
-                reverseMovementProbability: 0.0  // No reverse movement
+                directionChangeProbability: 0.001,
+                reverseMovementProbability: 0.0
             },
             type2: {
                 speedX: { min: 0.5, max: 1.5 },
@@ -31,8 +55,8 @@ class EnemyManager {
                 respawnDelay: 950,
                 width: 26,
                 height: 26,
-                directionChangeProbability: 0.002,  // 1.5% chance per frame
-                reverseMovementProbability: 0.0  // No reverse movement
+                directionChangeProbability: 0.002,
+                reverseMovementProbability: 0.0
             },
             type3: {
                 speedX: { min: 1.0, max: 2.0 },
@@ -41,8 +65,8 @@ class EnemyManager {
                 respawnDelay: 975,
                 width: 30,
                 height: 30,
-                directionChangeProbability: 0.004,  // 2.5% chance per frame
-                reverseMovementProbability: 0.0  // No reverse movement
+                directionChangeProbability: 0.004,
+                reverseMovementProbability: 0.0
             },
             type4: {
                 speedX: { min: 0.8, max: 1.8 },
@@ -51,8 +75,8 @@ class EnemyManager {
                 respawnDelay: 1100,
                 width: 32,
                 height: 32,
-                directionChangeProbability: 0.006,  // 3% chance per frame (more erratic)
-                reverseMovementProbability: 0.003  // 0.3% chance to move backward (unique to type 4!)
+                directionChangeProbability: 0.006,
+                reverseMovementProbability: 0.003
             },
             type5: {
                 speedX: { min: 1.2, max: 2.2 },
@@ -61,8 +85,8 @@ class EnemyManager {
                 respawnDelay: 1200,
                 width: 28,
                 height: 28,
-                directionChangeProbability: 0.008,  // 4% chance per frame (very erratic)
-                reverseMovementProbability: 0.0  // No reverse movement
+                directionChangeProbability: 0.008,
+                reverseMovementProbability: 0.0
             },
             type6: {
                 speedX: { min: 1.0, max: 2.0 },
@@ -71,8 +95,18 @@ class EnemyManager {
                 respawnDelay: 1300,
                 width: 30,
                 height: 30,
-                directionChangeProbability: 0.006,  // 3% chance per frame 
-                reverseMovementProbability: 0.008  // 0.8% chance to reverse Y direction (high retrograde capability)
+                directionChangeProbability: 0.007,
+                reverseMovementProbability: 0.008
+            },
+            type7: {
+                speedX: { min: 1.1, max: 2.1 },
+                speedY: { min: 1.0, max: 1.6 },
+                points: 80,
+                respawnDelay: 1250,
+                width: 32,
+                height: 32,
+                directionChangeProbability: 0.005,
+                reverseMovementProbability: 0.004
             }
         };
     }
@@ -137,13 +171,13 @@ class EnemyManager {
         
         const enemy = {
             x: Math.random() * (this.canvas.width - config.width),
-            y: Math.random() * -50 - 20,  // Spawn closer to top of screen
+            y: Math.random() * -50 - 20,
             width: config.width,
             height: config.height,
             speedX: (Math.random() * (config.speedX.max - config.speedX.min) + config.speedX.min) * speedMultiplier,
             speedY: (Math.random() * (config.speedY.max - config.speedY.min) + config.speedY.min) * speedMultiplier,
             direction: Math.random() > 0.5 ? 1 : -1,
-            directionY: 1,  // Start moving downward
+            directionY: 1,
             alive: true,
             type: enemyType
         };
@@ -159,9 +193,9 @@ class EnemyManager {
         if (enemyType === 4) {
             enemy.forceField = {
                 active: false,
-                nextActivationTime: Math.random() * 10000 + 5000, // Random delay 5-15 seconds
-                duration: 30000, // 30 seconds
-                activationChance: 0.20, // 20% chance
+                nextActivationTime: Math.random() * 10000 + 5000,
+                duration: 10000,
+                activationChance: 0.20,
                 lastCheckTime: Date.now()
             };
         }
@@ -204,7 +238,7 @@ class EnemyManager {
         } else if (obj2IsType4 && !obj1IsType4) {
             return this.checkCircularCollision(obj2, obj1);
         } else if (obj1IsType4 && obj2IsType4) {
-            // Both are type 4, use circle-to-circle collision
+            // Both are type 4, use circle-to-circle collision (optimized)
             const center1X = obj1.x + obj1.width / 2;
             const center1Y = obj1.y + obj1.height / 2;
             const radius1 = obj1.width / 2;
@@ -215,9 +249,10 @@ class EnemyManager {
             
             const dx = center1X - center2X;
             const dy = center1Y - center2Y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
+            const distanceSquared = dx * dx + dy * dy;
             
-            return distance < (radius1 + radius2);
+            const radiusSum = radius1 + radius2;
+            return distanceSquared < (radiusSum * radiusSum);
         } else {
             // Neither is type 4, use regular rectangular collision
             return this.checkCollision(obj1, obj2);
@@ -237,21 +272,21 @@ class EnemyManager {
         // Get circle center and radius
         const circleX = circle.x + circle.width / 2;
         const circleY = circle.y + circle.height / 2;
-        const radius = circle.width / 2; // Assuming circular shape with radius = width/2
+        const radius = circle.width / 2;
         
         // Get rectangle center
         const rectCenterX = rect.x + rect.width / 2;
         const rectCenterY = rect.y + rect.height / 2;
         
-        // Calculate distance between centers
+        // Calculate squared distance between centers (avoid Math.sqrt)
         const dx = circleX - rectCenterX;
         const dy = circleY - rectCenterY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
+        const distanceSquared = dx * dx + dy * dy;
         
-        // Check if distance is less than radius (treating other object as a point for simplicity)
-        // For bullets and small objects, this works well
+        // Check if squared distance is less than squared radius sum
         const otherRadius = Math.min(rect.width, rect.height) / 2;
-        return distance < (radius + otherRadius);
+        const radiusSum = radius + otherRadius;
+        return distanceSquared < (radiusSum * radiusSum);
     }
     
     // Check if enemies are colliding and handle avoidance
@@ -335,54 +370,100 @@ class EnemyManager {
     }
     
     // Update all enemies
-    updateEnemies(enemyBullets) {
+    updateEnemies(player, enemyBullets) {
         const now = Date.now();
         
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
             if (enemy.alive) {
-                // Get the base config for this enemy type
                 const baseConfig = this.enemyBaseConfig[`type${enemy.type}`];
-                
-                // Random direction change based on probability, modified by level's eccentricity
                 const eccentricityMultiplier = this.levelConfig.global.eccentricityMultiplier || 1.0;
-                if (Math.random() < baseConfig.directionChangeProbability * eccentricityMultiplier) {
-                    enemy.direction *= -1;
+
+                // Initialize decision timers if not set
+                if (!enemy.nextDirectionChangeTime) {
+                    const avgInterval = 1000 / (baseConfig.directionChangeProbability * eccentricityMultiplier);
+                    enemy.nextDirectionChangeTime = now + Math.random() * avgInterval;
                 }
-                
-                // Check for reverse movement (type 4 only) - but not if in top 10% of screen
-                if (enemy.y > this.canvas.height * 0.1 && Math.random() < baseConfig.reverseMovementProbability * eccentricityMultiplier) {
-                    enemy.directionY *= -1;
+                if (!enemy.nextReverseTime && (enemy.type === 4 || enemy.type === 6 || enemy.type === 7)) {
+                    const avgInterval = 1000 / (baseConfig.reverseMovementProbability * eccentricityMultiplier);
+                    enemy.nextReverseTime = now + Math.random() * avgInterval;
                 }
-                
-                // Special case: Type 6 can reverse movement anywhere on screen (enhanced retrograde)
-                if (enemy.type === 6 && Math.random() < baseConfig.reverseMovementProbability * eccentricityMultiplier) {
-                    enemy.directionY *= -1;
+
+                // Stochastic Direction Change: Check timer instead of probability
+                if (now >= enemy.nextDirectionChangeTime) {
+                    const playerDir = this.calculateDirectionToPlayer(enemy, player);
+                    // Update enemy direction to point toward player
+                    enemy.direction = playerDir.directionX > 0 ? 1 : -1;
+                    enemy.directionY = playerDir.directionY > 0 ? 1 : -1;
+                    
+                    // Schedule next direction change
+                    const avgInterval = 1000 / (baseConfig.directionChangeProbability * eccentricityMultiplier);
+                    enemy.nextDirectionChangeTime = now + Math.random() * avgInterval * 2; // Add variance
                 }
-                
-                enemy.x += enemy.speedX * enemy.direction;
-                
+
+                // Y-Direction Reversal Logic (Types 4, 6, and 7)
+                if (enemy.type === 4) {
+                    if (enemy.y > this.canvas.height * 0.1 && now >= enemy.nextReverseTime) {
+                        enemy.directionY *= -1;
+                        const avgInterval = 1000 / (baseConfig.reverseMovementProbability * eccentricityMultiplier);
+                        enemy.nextReverseTime = now + Math.random() * avgInterval * 2;
+                    }
+                } else if (enemy.type === 6) {
+                    if (now >= enemy.nextReverseTime) {
+                        enemy.directionY *= -1;
+                        const avgInterval = 1000 / (baseConfig.reverseMovementProbability * eccentricityMultiplier);
+                        enemy.nextReverseTime = now + Math.random() * avgInterval * 2;
+                    }
+                } else if (enemy.type === 7) {
+                    if (enemy.y > this.canvas.height * 0.3 && now >= enemy.nextReverseTime) {
+                        enemy.directionY *= -1;
+                        const avgInterval = 1000 / (baseConfig.reverseMovementProbability * eccentricityMultiplier);
+                        enemy.nextReverseTime = now + Math.random() * avgInterval * 2;
+                    }
+                }
+
+                // Normal Movement (using current direction)
+                const actualVx = enemy.speedX * enemy.direction;
+                const actualVy = enemy.speedY * enemy.directionY;
+
+                enemy.x += actualVx;
+                enemy.y += actualVy;
+
+                // X Boundary Collision
                 if (enemy.x <= 0 || enemy.x >= this.canvas.width - enemy.width) {
                     enemy.direction *= -1;
+                    enemy.x = Math.max(0, Math.min(this.canvas.width - enemy.width, enemy.x));
                 }
                 
-                enemy.y += enemy.speedY * enemy.directionY;
-                
-                // Update rotation for type 5 enemies to match their direction of travel
+                // Update rotation for type 5 enemies to match their actual direction of travel
                 if (enemy.type === 5) {
-                    const vx = enemy.speedX * enemy.direction;
-                    const vy = enemy.speedY * enemy.directionY;
-                    enemy.rotation = Math.atan2(vy, vx) - Math.PI/2;
+                    const targetRotation = Math.atan2(actualVy, actualVx) - Math.PI / 2;
+                    
+                    // Initialize rotation if not set
+                    if (enemy.rotation === undefined) {
+                        enemy.rotation = targetRotation;
+                    } else {
+                        // Smooth rotation interpolation to prevent jumpiness
+                        const rotationSpeed = 0.15;
+                        
+                        // Handle angle wrapping (shortest path between angles)
+                        let angleDiff = targetRotation - enemy.rotation;
+                        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+                        while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+                        
+                        enemy.rotation += angleDiff * rotationSpeed;
+                    }
                     
                     // Type 5 enemies can shoot bullets
                     if (!enemy.lastShot) enemy.lastShot = 0;
-                    if (now - enemy.lastShot > 2000 + Math.random() * 3000) { // Random shooting interval between 2-5 seconds
+                    if (!enemy.nextShotTime) enemy.nextShotTime = now + 2000 + Math.random() * 3000;
+                    if (now >= enemy.nextShotTime) {
                         enemy.lastShot = now;
+                        enemy.nextShotTime = now + 2000 + Math.random() * 3000;
                         
-                        // Calculate bullet velocity based on enemy's rotation
                         const bulletSpeed = 3;
-                        const bulletVx = -Math.cos(enemy.rotation) * bulletSpeed;
-                        const bulletVy = Math.sin(enemy.rotation) * bulletSpeed;
+                        const bulletVx = Math.sin(enemy.rotation) * bulletSpeed;
+                        const bulletVy = -Math.cos(enemy.rotation) * bulletSpeed;
                         
                         enemyBullets.push({
                             x: enemy.x + enemy.width / 2 - 2,
@@ -392,62 +473,50 @@ class EnemyManager {
                             vx: bulletVx,
                             vy: bulletVy
                         });
-                        
-                        // Play enemy bullet sound (slightly different from player)
                         this.soundManager.playEnemyBulletSound();
                     }
                 }
                 
                 // Handle wrapping for enemies going off screen
                 if (enemy.y > this.canvas.height) {
-                    enemy.y = Math.random() * -50 - 20;  // Match the spawn position
+                    enemy.y = Math.random() * -50 - 20;
                     enemy.x = Math.random() * (this.canvas.width - enemy.width);
                     enemy.direction = Math.random() > 0.5 ? 1 : -1;
-                    enemy.directionY = 1;  // Reset to moving downward
-                    
-                    // Update rotation for type 5 enemies after wrapping
+                    enemy.directionY = 1;
                     if (enemy.type === 5) {
-                        const vx = enemy.speedX * enemy.direction;
-                        const vy = enemy.speedY * enemy.directionY;
-                        enemy.rotation = Math.atan2(vy, vx) - Math.PI/2;
+                        const patrolVx = enemy.speedX * enemy.direction;
+                        const patrolVy = enemy.speedY * enemy.directionY;
+                        enemy.rotation = Math.atan2(patrolVy, patrolVx) - Math.PI / 2;
                     }
-                } else if (enemy.y < -100) {  // If moving backward and goes too far up
-                    enemy.y = this.canvas.height + 20;  // Wrap to bottom
+                } else if (enemy.y < -100) {
+                    enemy.y = this.canvas.height + 20;
                     enemy.x = Math.random() * (this.canvas.width - enemy.width);
                     enemy.direction = Math.random() > 0.5 ? 1 : -1;
-                    enemy.directionY = 1;  // Reset to moving downward
-                    
-                    // Update rotation for type 5 enemies after wrapping
+                    enemy.directionY = 1;
                     if (enemy.type === 5) {
-                        const vx = enemy.speedX * enemy.direction;
-                        const vy = enemy.speedY * enemy.directionY;
-                        enemy.rotation = Math.atan2(vy, vx) - Math.PI/2;
+                        const patrolVx = enemy.speedX * enemy.direction;
+                        const patrolVy = enemy.speedY * enemy.directionY;
+                        enemy.rotation = Math.atan2(patrolVy, patrolVx) - Math.PI / 2;
                     }
                 }
                 
                 // Update force field for type 4 enemies
                 if (enemy.type === 4 && enemy.forceField) {
                     const currentTime = now;
-                    
                     if (!enemy.forceField.active) {
-                        // Check if it's time to potentially activate the force field
                         if (currentTime - enemy.forceField.lastCheckTime >= enemy.forceField.nextActivationTime) {
-                            // Roll for activation chance
                             if (Math.random() < enemy.forceField.activationChance) {
                                 enemy.forceField.active = true;
                                 enemy.forceField.activationStartTime = currentTime;
                             }
-                            
-                            // Set next check time regardless of activation
                             enemy.forceField.lastCheckTime = currentTime;
-                            enemy.forceField.nextActivationTime = Math.random() * 10000 + 5000; // 5-15 seconds
+                            enemy.forceField.nextActivationTime = Math.random() * 10000 + 5000;
                         }
                     } else {
-                        // Force field is active, check if duration is over
                         if (currentTime - enemy.forceField.activationStartTime >= enemy.forceField.duration) {
                             enemy.forceField.active = false;
                             enemy.forceField.lastCheckTime = currentTime;
-                            enemy.forceField.nextActivationTime = Math.random() * 10000 + 5000; // 5-15 seconds
+                            enemy.forceField.nextActivationTime = Math.random() * 10000 + 5000;
                         }
                     }
                 }
@@ -455,6 +524,7 @@ class EnemyManager {
         }
         
         this.handleEnemyCollision();
+        this.removeDeadEnemies();
     }
     
     // Get points for an enemy type
@@ -468,12 +538,7 @@ class EnemyManager {
     removeDeadEnemies() {
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             if (!this.enemies[i].alive) {
-                setTimeout(() => {
-                    const index = this.enemies.findIndex(e => e === this.enemies[i]);
-                    if (index > -1) {
-                        this.enemies.splice(index, 1);
-                    }
-                }, 100);
+                this.enemies.splice(i, 1);
             }
         }
     }
@@ -509,5 +574,28 @@ class EnemyManager {
     // Get enemy base configuration (for external access)
     getEnemyBaseConfig() {
         return this.enemyBaseConfig;
+    }
+
+    // Calculate direction towards the player
+    calculateDirectionToPlayer(enemy, player) {
+        if (!enemy || !player) {
+            return { directionX: 0, directionY: 1 };
+        }
+
+        const dx = player.x + (player.width / 2) - (enemy.x + enemy.width / 2);
+        const dy = player.y + (player.height / 2) - (enemy.y + enemy.height / 2);
+
+        const distanceSquared = dx * dx + dy * dy;
+
+        if (distanceSquared === 0) {
+            return { directionX: 0, directionY: 1 };
+        }
+
+        // Only calculate sqrt when we need normalized direction
+        const distance = Math.sqrt(distanceSquared);
+        return {
+            directionX: dx / distance,
+            directionY: dy / distance
+        };
     }
 } 

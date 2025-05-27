@@ -72,7 +72,7 @@ const levelConfigs = {
         allowedEnemyTypes: [1, 2, 3, 4],
         global: {
             maxEnemies: 41,
-            spawnTimeWindow: 27.1,
+            spawnTimeWindow: 49.8,
             collisionSeparation: 2.8,
             wrapBuffer: 80,
             speedMultiplier: 1.66,
@@ -84,7 +84,7 @@ const levelConfigs = {
         allowedEnemyTypes: [1, 2, 3, 4],
         global: {
             maxEnemies: 45,
-            spawnTimeWindow: 27.5,
+            spawnTimeWindow: 52.4,
             collisionSeparation: 3.0,
             wrapBuffer: 88,
             speedMultiplier: 1.77,
@@ -96,7 +96,7 @@ const levelConfigs = {
         allowedEnemyTypes: [1, 2, 3, 4, 5],
         global: {
             maxEnemies: 48,
-            spawnTimeWindow: 27.9,
+            spawnTimeWindow: 54.7,
             collisionSeparation: 3.2,
             wrapBuffer: 88,
             speedMultiplier: 1.88,
@@ -108,7 +108,7 @@ const levelConfigs = {
         allowedEnemyTypes: [1, 2, 3, 4, 5],
         global: {
             maxEnemies: 51,
-            spawnTimeWindow: 28.2,
+            spawnTimeWindow: 56.9,
             collisionSeparation: 3.4,
             wrapBuffer: 88,
             speedMultiplier: 1.97,
@@ -121,7 +121,7 @@ const levelConfigs = {
         allowedEnemyTypes: [1, 2, 3, 4, 5, 6],
         global: {
             maxEnemies: 54,
-            spawnTimeWindow: 28.6,
+            spawnTimeWindow: 59.0,
             collisionSeparation: 3.6,
             wrapBuffer: 95,
             speedMultiplier: 2.06,
@@ -131,10 +131,10 @@ const levelConfigs = {
     },
     10: {
         name: "2 Charlie",
-        allowedEnemyTypes: [1, 2, 3, 4, 5, 6],
+        allowedEnemyTypes: [1, 2, 3, 4, 5, 6, 7],
         global: {
             maxEnemies: 57,
-            spawnTimeWindow: 28.9,
+            spawnTimeWindow: 60.9,
             collisionSeparation: 3.9,
             wrapBuffer: 102,
             speedMultiplier: 2.14,
@@ -144,10 +144,10 @@ const levelConfigs = {
     },
     11: {
         name: "2 Delta",
-        allowedEnemyTypes: [2, 3, 4, 5, 6],
+        allowedEnemyTypes: [2, 3, 4, 5, 6, 7],
         global: {
             maxEnemies: 59,
-            spawnTimeWindow: 29.1,
+            spawnTimeWindow: 62.8,
             collisionSeparation: 4.2,
             wrapBuffer: 110,
             speedMultiplier: 2.22,
@@ -157,10 +157,10 @@ const levelConfigs = {
     },
     12: {
         name: "2 Echo",
-        allowedEnemyTypes: [2, 3, 4, 5, 6],
+        allowedEnemyTypes: [2, 3, 4, 5, 6, 7],
         global: {
             maxEnemies: 62,
-            spawnTimeWindow: 29.4,
+            spawnTimeWindow: 64.6,
             collisionSeparation: 4.6,
             wrapBuffer: 118,
             speedMultiplier: 2.3,
@@ -170,10 +170,10 @@ const levelConfigs = {
     },
     13: {
         name: "2 Foxtrot",
-        allowedEnemyTypes: [3, 4, 5, 6],
+        allowedEnemyTypes: [3, 4, 6, 7],
         global: {
             maxEnemies: 64,
-            spawnTimeWindow: 29.7,
+            spawnTimeWindow: 66.3,
             collisionSeparation: 5.0,
             wrapBuffer: 125,
             speedMultiplier: 2.37,
@@ -183,7 +183,7 @@ const levelConfigs = {
     },
     14: {
         name: "2 Golf",
-        allowedEnemyTypes: [3, 4, 5, 6],
+        allowedEnemyTypes: [3, 4, 6, 7],
         global: {
             maxEnemies: 67,
             spawnTimeWindow: 67.9,
@@ -196,7 +196,7 @@ const levelConfigs = {
     },
     15: {
         name: "3 Alfa",
-        allowedEnemyTypes: [4, 5, 6],
+        allowedEnemyTypes: [4, 6, 7],
         global: {
             maxEnemies: 69,
             spawnTimeWindow: 69.48,
@@ -209,7 +209,7 @@ const levelConfigs = {
     },
     16: {
         name: "3 Bravo",
-        allowedEnemyTypes: [4, 5, 6],
+        allowedEnemyTypes: [4, 5, 6, 7],
         global: {
             maxEnemies: 71,
             spawnTimeWindow: 71.0,
@@ -217,6 +217,19 @@ const levelConfigs = {
             wrapBuffer: 132,
             speedMultiplier: 2.58,
             eccentricityMultiplier: 2.7,
+            scoreBonus: 15
+        }
+    },
+    17: {
+        name: "3 Charlie",
+        allowedEnemyTypes: [4, 5, 6, 7],
+        global: {
+            maxEnemies: 73,
+            spawnTimeWindow: 72.48,
+            collisionSeparation: 5.0,
+            wrapBuffer: 132,
+            speedMultiplier: 2.64,
+            eccentricityMultiplier: 2.79,
             scoreBonus: 15
         }
     }

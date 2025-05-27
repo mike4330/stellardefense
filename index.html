@@ -125,6 +125,11 @@
         let gameStarted = false;
         let highScoreChecked = false;  // Prevent multiple high score checks
         
+        // Player shooting parameters
+        let playerFireRate = 85; // ms between shots in a burst
+        let playerBurstLength = 5; // shots per burst
+        let playerBurstCooldown = 550; // ms cooldown between bursts
+        
         // Extra life system
         const extraLifeThresholds = [10000, 21000, 44100, 92610];
         let extraLifeIndex = 0;  // Track which threshold is next
@@ -137,19 +142,11 @@
         let teleportInput = '';
         let teleportActive = false;
         
-        // Spawn schedule system
-        let spawnSchedule = [];
-        let nextSpawnIndex = 0;  // Track which spawn is next to process
-        
-
-        
         // Current level config
         let enemyConfig = levelConfigs[currentLevel];
         
         // Initialize enemy manager with level config
         enemyManager.initializeLevel(enemyConfig);
-        
-
         
         // Player ship
         const player = {
@@ -169,10 +166,6 @@
             respawnX: canvas.width / 2 - 9,  // Store respawn position
             respawnY: canvas.height - 55
         };
-        
-        // Game objects
-        const enemies = [];
-        const maxEnemies = enemyConfig.global.maxEnemies;
         
         // Bullets array
         const bullets = [];
@@ -284,8 +277,6 @@
             keys[e.code] = false;
         });
         
-
-        
         // Enhanced collision check that handles both rectangular and circular collision
         function checkEnhancedCollision(obj1, obj2) {
             // Check if either object is a type 4 enemy (circular collision)
@@ -316,8 +307,6 @@
                 return enemyManager.checkCollision(obj1, obj2);
             }
         }
-        
-
         
         // Create explosion effect
         function createExplosion(x, y) {
@@ -355,37 +344,11 @@
         
         // Update progress bar display
         function updateProgressBar() {
-            const remaining = enemyConfig.global.maxEnemies - enemiesDestroyed;
-            const progressPercentage = (enemiesDestroyed / enemyConfig.global.maxEnemies) * 100;
+            const remaining = enemyManager.getSpawnScheduleInfo().totalScheduled - enemiesDestroyed;
+            const progressPercentage = (enemiesDestroyed / enemyManager.getSpawnScheduleInfo().totalScheduled) * 100;
             
             document.getElementById('enemiesRemaining').textContent = remaining;
             document.getElementById('progressFill').style.width = progressPercentage + '%';
-        }
-        
-
-        
-        // Spawn enemies based on schedule
-        function spawnEnemies() {
-            // Don't spawn if game hasn't started yet
-            if (gameStartTime === 0) return;
-            
-            // Calculate current game time, excluding paused time
-            const currentTime = (Date.now() - gameStartTime - totalPausedTime) / 1000;
-            
-            // Check if any scheduled spawns are ready
-            while (nextSpawnIndex < spawnSchedule.length) {
-                const spawn = spawnSchedule[nextSpawnIndex];
-                
-                            if (!spawn.spawned && currentTime >= spawn.spawnTime) {
-                enemies.push(enemyManager.createEnemy());
-                spawn.spawned = true;
-                    totalEnemiesCreated++;
-                    nextSpawnIndex++;
-                } else {
-                    // Since schedule is sorted, no more spawns are ready yet
-                    break;
-                }
-            }
         }
         
         // Restart game function
@@ -418,10 +381,6 @@
             // Update visual effects level
             visualEffects.setCurrentLevel(currentLevel);
             
-            // Generate new spawn schedule for this level
-            spawnSchedule = enemyManager.generateSpawnSchedule(enemyConfig);
-            nextSpawnIndex = 0;
-            
             document.getElementById('scoreValue').textContent = score.toString().padStart(6, '0');
             updateLevelDisplay();
             updateProgressBar();
@@ -429,7 +388,6 @@
             player.x = player.respawnX;
             player.y = player.respawnY;
             
-            enemies.length = 0;
             bullets.length = 0;
             enemyBullets.length = 0;
             visualEffects.explosions.length = 0;
@@ -457,14 +415,9 @@
                 // Update visual effects level
                 visualEffects.setCurrentLevel(currentLevel);
                 
-                // Generate new spawn schedule for this level
-                spawnSchedule = enemyManager.generateSpawnSchedule(enemyConfig);
-                nextSpawnIndex = 0;
-                
                 updateLevelDisplay();
                 updateProgressBar();
                 
-                enemies.length = 0;
                 bullets.length = 0;
                 enemyBullets.length = 0;
                 visualEffects.explosions.length = 0;
@@ -498,14 +451,9 @@
                 // Update visual effects level
                 visualEffects.setCurrentLevel(currentLevel);
                 
-                // Generate new spawn schedule for this level
-                spawnSchedule = enemyManager.generateSpawnSchedule(enemyConfig);
-                nextSpawnIndex = 0;
-                
                 updateLevelDisplay();
                 updateProgressBar();
                 
-                enemies.length = 0;
                 bullets.length = 0;
                 enemyBullets.length = 0;
                 visualEffects.explosions.length = 0;
@@ -527,8 +475,8 @@
             }
             
             // If we're in cooldown, check if it's been long enough
-            if (shotsInBurst >= 5) {
-                if (now - lastBurstTime < 550) { // 550ms cooldown
+            if (shotsInBurst >= playerBurstLength) {
+                if (now - lastBurstTime < playerBurstCooldown) { // Use new state variable
                     return;
                 }
                 // Reset burst if cooldown is over
@@ -541,8 +489,8 @@
                 return;
             }
             
-            // Add delay between individual bullets in burst (85ms)
-            if (shotsInBurst > 0 && now - lastShot < 85) {
+            // Add delay between individual bullets in burst (use new state variable)
+            if (shotsInBurst > 0 && now - lastShot < playerFireRate) {
                 return;
             }
             
@@ -559,7 +507,7 @@
             lastShot = now;
             
             // If we've used all shots, start cooldown timer and prevent further shooting
-            if (shotsInBurst >= 5) {
+            if (shotsInBurst >= playerBurstLength) { // Use new state variable
                 canShoot = false;
                 lastBurstTime = now;  // Start cooldown timer when burst completes
             }
@@ -575,7 +523,7 @@
                 return;
             }
             
-            spawnEnemies();
+            enemyManager.spawnEnemies(gameStartTime, totalPausedTime);
             
             // Handle player invulnerability
             if (playerInvulnerable) {
@@ -585,6 +533,7 @@
                 }
             }
             
+            // Player Movement Logic (Restored/Ensured)
             // Horizontal movement with ease-in
             let targetVelocityX = 0;
             if (keys['ArrowLeft'] && player.x > 0) {
@@ -626,135 +575,25 @@
             
             // Apply velocity to position
             player.y += player.velocityY;
+            // End of Player Movement Logic
             
             const now = Date.now();
             if (keys['Space']) {
                 shootBullet();
             }
             
-            for (let i = enemies.length - 1; i >= 0; i--) {
-                const enemy = enemies[i];
-                if (enemy.alive) {
-                    // Get the base config for this enemy type
-                    const baseConfig = enemyManager.getEnemyBaseConfig()[`type${enemy.type}`];
-                    
-                    // Random direction change based on probability, modified by level's eccentricity
-                    const eccentricityMultiplier = enemyConfig.global.eccentricityMultiplier || 1.0;
-                    if (Math.random() < baseConfig.directionChangeProbability * eccentricityMultiplier) {
-                        enemy.direction *= -1;
-                    }
-                    
-                    // Check for reverse movement (type 4 only) - but not if in top 10% of screen
-                    if (enemy.y > canvas.height * 0.1 && Math.random() < baseConfig.reverseMovementProbability * eccentricityMultiplier) {
-                        enemy.directionY *= -1;
-                    }
-                    
-                    // Special case: Type 6 can reverse movement anywhere on screen (enhanced retrograde)
-                    if (enemy.type === 6 && Math.random() < baseConfig.reverseMovementProbability * eccentricityMultiplier) {
-                        enemy.directionY *= -1;
-                    }
-                    
-                    enemy.x += enemy.speedX * enemy.direction;
-                    
-                    if (enemy.x <= 0 || enemy.x >= canvas.width - enemy.width) {
-                        enemy.direction *= -1;
-                    }
-                    
-                    enemy.y += enemy.speedY * enemy.directionY;
-                    
-                    // Update rotation for type 5 enemies to match their direction of travel
-                    if (enemy.type === 5) {
-                        const vx = enemy.speedX * enemy.direction;
-                        const vy = enemy.speedY * enemy.directionY;
-                        enemy.rotation = Math.atan2(vy, vx) - Math.PI/2;
-                        
-                        // Type 5 enemies can shoot bullets
-                        if (!enemy.lastShot) enemy.lastShot = 0;
-                        if (now - enemy.lastShot > 2000 + Math.random() * 3000) { // Random shooting interval between 2-5 seconds
-                            enemy.lastShot = now;
-                            
-                            // Calculate bullet velocity based on enemy's rotation
-                            const bulletSpeed = 3;
-                            const bulletVx = -Math.cos(enemy.rotation) * bulletSpeed;
-                            const bulletVy = Math.sin(enemy.rotation) * bulletSpeed;
-                            
-                            enemyBullets.push({
-                                x: enemy.x + enemy.width / 2 - 2,
-                                y: enemy.y + enemy.height / 2 - 3,
-                                width: 4,
-                                height: 6,
-                                vx: bulletVx,
-                                vy: bulletVy
-                            });
-                            
-                            // Play enemy bullet sound (slightly different from player)
-                            soundManager.playEnemyBulletSound();
-                        }
-                    }
-                    
-                    // Handle wrapping for enemies going off screen
-                    if (enemy.y > canvas.height) {
-                        enemy.y = Math.random() * -50 - 20;  // Match the spawn position
-                        enemy.x = Math.random() * (canvas.width - enemy.width);
-                        enemy.direction = Math.random() > 0.5 ? 1 : -1;
-                        enemy.directionY = 1;  // Reset to moving downward
-                        
-                        // Update rotation for type 5 enemies after wrapping
-                        if (enemy.type === 5) {
-                            const vx = enemy.speedX * enemy.direction;
-                            const vy = enemy.speedY * enemy.directionY;
-                            enemy.rotation = Math.atan2(vy, vx) - Math.PI/2;
-                        }
-                    } else if (enemy.y < -100) {  // If moving backward and goes too far up
-                        enemy.y = canvas.height + 20;  // Wrap to bottom
-                        enemy.x = Math.random() * (canvas.width - enemy.width);
-                        enemy.direction = Math.random() > 0.5 ? 1 : -1;
-                        enemy.directionY = 1;  // Reset to moving downward
-                        
-                        // Update rotation for type 5 enemies after wrapping
-                        if (enemy.type === 5) {
-                            const vx = enemy.speedX * enemy.direction;
-                            const vy = enemy.speedY * enemy.directionY;
-                            enemy.rotation = Math.atan2(vy, vx) - Math.PI/2;
-                        }
-                    }
-                    
-                    // Update force field for type 4 enemies
-                    if (enemy.type === 4 && enemy.forceField) {
-                        const currentTime = now;
-                        
-                        if (!enemy.forceField.active) {
-                            // Check if it's time to potentially activate the force field
-                            if (currentTime - enemy.forceField.lastCheckTime >= enemy.forceField.nextActivationTime) {
-                                // Roll for activation chance
-                                if (Math.random() < enemy.forceField.activationChance) {
-                                    enemy.forceField.active = true;
-                                    enemy.forceField.activationStartTime = currentTime;
-                                }
-                                
-                                // Set next check time regardless of activation
-                                enemy.forceField.lastCheckTime = currentTime;
-                                enemy.forceField.nextActivationTime = Math.random() * 10000 + 5000; // 5-15 seconds
-                            }
-                        } else {
-                            // Force field is active, check if duration is over
-                            if (currentTime - enemy.forceField.activationStartTime >= enemy.forceField.duration) {
-                                enemy.forceField.active = false;
-                                enemy.forceField.lastCheckTime = currentTime;
-                                enemy.forceField.nextActivationTime = Math.random() * 10000 + 5000; // 5-15 seconds
-                            }
-                        }
-                    }
-                    
-                    // Check for collision with player
-                    if (!playerInvulnerable && checkEnhancedCollision(player, enemy)) {
-                        handlePlayerDeath();
-                    }
+            // Call enemyManager to update enemies
+            enemyManager.updateEnemies(player, enemyBullets);
+            
+            // Check for player collision with enemies AFTER enemyManager update
+            const currentEnemies = enemyManager.getEnemies();
+            for (let i = currentEnemies.length - 1; i >= 0; i--) {
+                const enemy = currentEnemies[i];
+                if (enemy.alive && !playerInvulnerable && checkEnhancedCollision(player, enemy)) {
+                    handlePlayerDeath();
+                    break; // Player can only die once per frame
                 }
             }
-            
-            // Handle enemy collisions using the enemy manager
-            enemyManager.handleEnemyCollisionForArray(enemies, enemyConfig);
             
             for (let i = bullets.length - 1; i >= 0; i--) {
                 // Handle deflected bullets with different movement
@@ -766,8 +605,8 @@
                 }
                 
                 let bulletHit = false;
-                for (let j = enemies.length - 1; j >= 0; j--) {
-                    const enemy = enemies[j];
+                for (let j = currentEnemies.length - 1; j >= 0; j--) { // Use currentEnemies from enemyManager
+                    const enemy = currentEnemies[j]; // Use currentEnemies
                     if (enemy.alive && checkEnhancedCollision(bullets[i], enemy)) {
                         // Check if this is a type 4 enemy with active force field
                         if (enemy.type === 4 && enemy.forceField && enemy.forceField.active) {
@@ -818,14 +657,7 @@
                             bullets.splice(i, 1);
                             bulletHit = true;
                             
-                            setTimeout(() => {
-                                const index = enemies.indexOf(enemy);
-                                if (index > -1) {
-                                    enemies.splice(index, 1);
-                                }
-                            }, 100);
-                            
-                            if (enemiesDestroyed >= enemyConfig.global.maxEnemies) {
+                            if (enemiesDestroyed >= enemyManager.getSpawnScheduleInfo().totalScheduled) {
                                 if (levelConfigs[currentLevel + 1]) {
                                     // Start level transition
                                     levelTransition = true;
@@ -841,17 +673,22 @@
                     }
                 }
                 
-                if (bulletHit) continue;
+                if (bulletHit) {
+                    continue; // If bullet hit an enemy, skip further processing for this bullet index.
+                }
                 
                 // Remove bullets that go off screen (normal bullets only go up, deflected can go anywhere)
-                if (bullets[i].deflected) {
-                    if (bullets[i].x < -10 || bullets[i].x > canvas.width + 10 || 
-                        bullets[i].y < -10 || bullets[i].y > canvas.height + 10) {
-                        bullets.splice(i, 1);
-                    }
-                } else {
-                    if (bullets[i].y < 0) {
-                        bullets.splice(i, 1);
+                // Ensure bullets[i] still exists before accessing its properties, as it might have been spliced.
+                if (bullets[i]) { 
+                    if (bullets[i].deflected) {
+                        if (bullets[i].x < -10 || bullets[i].x > canvas.width + 10 || 
+                            bullets[i].y < -10 || bullets[i].y > canvas.height + 10) {
+                            bullets.splice(i, 1);
+                        }
+                    } else {
+                        if (bullets[i].y < 0) {
+                            bullets.splice(i, 1);
+                        }
                     }
                 }
             }
@@ -905,7 +742,7 @@
             // Draw game objects
             visualEffects.drawPlayer(player, playerInvulnerable);
             visualEffects.drawPlayerLives(playerLives);
-            visualEffects.drawEnemies(enemies);
+            visualEffects.drawEnemies(enemyManager.getEnemies());
             visualEffects.drawBullets(bullets);
             visualEffects.drawEnemyBullets(enemyBullets);
             visualEffects.drawExplosions();
@@ -915,8 +752,8 @@
                 ctx.fillStyle = '#ffffff';
                 ctx.font = '12px Courier New';
                 ctx.textAlign = 'left';
-                const aliveEnemies = enemies.filter(e => e.alive).length;
-                const remainingToKill = enemyConfig.global.maxEnemies - enemiesDestroyed;
+                const aliveEnemies = enemyManager.getEnemies().filter(e => e.alive).length;
+                const remainingToKill = enemyManager.getSpawnScheduleInfo().totalScheduled - enemiesDestroyed;
                 const currentTime = (Date.now() - gameStartTime - totalPausedTime) / 1000;
                 const timeWindow = enemyConfig.global.spawnTimeWindow;
                 
@@ -930,21 +767,21 @@
                     ctx.fillStyle = '#ffffff';
                 }
                 
-                ctx.fillText(`DEBUG: Spawned: ${totalEnemiesCreated}/${enemyConfig.global.maxEnemies}`, 10, debugY);
-                ctx.fillText(`Schedule: ${nextSpawnIndex}/${spawnSchedule.length} | Time: ${currentTime.toFixed(1)}s/${timeWindow}s`, 10, debugY + 15);
+                ctx.fillText(`DEBUG: Spawned: ${enemyManager.getTotalEnemiesCreated()}/${enemyManager.getSpawnScheduleInfo().totalScheduled}`, 10, debugY);
+                ctx.fillText(`Schedule: ${enemyManager.getSpawnScheduleInfo().nextSpawnIndex}/${enemyManager.getSpawnScheduleInfo().totalScheduled} | Time: ${currentTime.toFixed(1)}s/${timeWindow}s`, 10, debugY + 15);
                 ctx.fillText(`Alive: ${aliveEnemies} | Killed: ${enemiesDestroyed}`, 10, debugY + 30);
                 ctx.fillText(`Remaining: ${remainingToKill}`, 10, debugY + 45);
-                ctx.fillText(`Total Enemies Array: ${enemies.length}`, 10, debugY + 60);
+                ctx.fillText(`Total Enemies Array (Manager): ${enemyManager.getEnemies().length}`, 10, debugY + 60);
                 ctx.fillText(`Level: ${currentLevel} (${enemyConfig.name}) | j<num><enter> to teleport`, 10, debugY + 75);
                 
                 // Show force field status for type 4 enemies
-                const type4Enemies = enemies.filter(e => e.alive && e.type === 4);
+                const type4Enemies = enemyManager.getEnemies().filter(e => e.alive && e.type === 4);
                 if (type4Enemies.length > 0) {
                     const activeForceFields = [];
                     type4Enemies.forEach((enemy, index) => {
                         if (enemy.forceField && enemy.forceField.active) {
                             const timeRemaining = Math.max(0, enemy.forceField.duration - (Date.now() - enemy.forceField.activationStartTime)) / 1000;
-                            activeForceFields.push(`#${enemies.indexOf(enemy)} (${timeRemaining.toFixed(1)}s)`);
+                            activeForceFields.push(`#${enemyManager.getEnemies().indexOf(enemy)} (${timeRemaining.toFixed(1)}s)`);
                         }
                     });
                     
@@ -990,8 +827,6 @@
             
             // Initialize game timing and spawn schedule when game actually starts
             gameStartTime = Date.now();
-            spawnSchedule = enemyManager.generateSpawnSchedule(enemyConfig);
-            nextSpawnIndex = 0;
         });
         
         // High scores button click

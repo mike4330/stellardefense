@@ -87,7 +87,19 @@ class VisualEffects {
         };
         this.enemyImages.type5.src = 'enemy_type5.png';
         
-        // Type 6 enemy image (new enemy type)
+        // Type 4 enemy image (cyan star)
+        this.enemyImages.type4 = new Image();
+        this.enemyImages.type4.onload = () => {
+            this.imagesLoaded++;
+            console.log('Type 4 enemy image loaded');
+        };
+        this.enemyImages.type4.onerror = () => {
+            console.log('Type 4 enemy image failed to load, using fallback shapes');
+            this.imagesLoaded++;
+        };
+        this.enemyImages.type4.src = 'enemy_type4.png';
+        
+        // Type 6 enemy image (orange arrow)
         this.enemyImages.type6 = new Image();
         this.enemyImages.type6.onload = () => {
             this.imagesLoaded++;
@@ -98,6 +110,18 @@ class VisualEffects {
             this.imagesLoaded++;
         };
         this.enemyImages.type6.src = 'enemy_type6.png';
+        
+        // Type 7 enemy image (purple hexagon)
+        this.enemyImages.type7 = new Image();
+        this.enemyImages.type7.onload = () => {
+            this.imagesLoaded++;
+            console.log('Type 7 enemy image loaded');
+        };
+        this.enemyImages.type7.onerror = () => {
+            console.log('Type 7 enemy image failed to load, using fallback shapes');
+            this.imagesLoaded++;
+        };
+        this.enemyImages.type7.src = 'enemy_type7.png';
     }
     
     // Create explosion effect
@@ -415,6 +439,32 @@ class VisualEffects {
                 this.ctx.lineTo(centerX + arrowSize/2, centerY - arrowSize); // Right top
                 this.ctx.lineTo(centerX + arrowSize/2, centerY);         // Right inner
                 this.ctx.lineTo(centerX + arrowSize, centerY);           // Right
+            }
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+        } else if (enemy.type === 7) {
+            // Type 7 moderate difficulty enemy - hexagon shape
+            this.ctx.fillStyle = '#9966ff';
+            this.ctx.strokeStyle = '#bb88ff';
+            this.ctx.lineWidth = 1;
+            
+            const centerX = enemy.x + enemy.width / 2;
+            const centerY = enemy.y + enemy.height / 2;
+            const radius = enemy.width * 0.4;
+            const sides = 6;
+            
+            this.ctx.beginPath();
+            for (let i = 0; i < sides; i++) {
+                const angle = (i * 2 * Math.PI) / sides;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+                
+                if (i === 0) {
+                    this.ctx.moveTo(x, y);
+                } else {
+                    this.ctx.lineTo(x, y);
+                }
             }
             this.ctx.closePath();
             this.ctx.fill();
