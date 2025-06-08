@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Galaga Level Configuration Editor
+Stellar Defense Level Configuration Editor
 A console-based spreadsheet-like interface for editing game levels
 """
 
@@ -644,7 +644,7 @@ Navigation:
         self.columns = [
             {'name': 'Level', 'width': 8, 'field': 'level_num', 'type': 'int'},
             {'name': 'Name', 'width': 12, 'field': 'name', 'type': 'str'},
-            {'name': 'Enemy Types', 'width': 12, 'field': 'allowedEnemyTypes', 'type': 'list'},
+            {'name': 'Enemy Types', 'width': 20, 'field': 'allowedEnemyTypes', 'type': 'list'},
             {'name': 'Max Enemies', 'width': 12, 'field': 'maxEnemies', 'type': 'int'},
             {'name': 'Spawn Time', 'width': 12, 'field': 'spawnTimeWindow', 'type': 'float'},
             {'name': 'Collision Sep', 'width': 14, 'field': 'collisionSeparation', 'type': 'float'},
