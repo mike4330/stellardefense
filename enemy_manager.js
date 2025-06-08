@@ -18,6 +18,7 @@
  * Type 5: Red cross - shoots bullets, rotates to match movement direction
  * Type 6: Orange arrow - high retrograde capability, can reverse Y-direction frequently
  * Type 7: Purple hexagon - moderate difficulty with balanced homing and agility
+ * Type 8: Golden beetle/boss - capture fighter prototype, high mobility and aggression
  * 
  * LEVEL MULTIPLIERS:
  * speedMultiplier: Applied to all enemy speeds from level config
@@ -35,6 +36,9 @@ class EnemyManager {
         this.spawnSchedule = [];
         this.nextSpawnIndex = 0;
         this.totalEnemiesCreated = 0;
+        
+        // Tractor beam global state
+        this.activeTractorBeamCount = 0;
         
         // Base enemy configurations
         this.enemyBaseConfig = {
@@ -107,6 +111,16 @@ class EnemyManager {
                 height: 32,
                 directionChangeProbability: 0.005,
                 reverseMovementProbability: 0.004
+            },
+            type8: {
+                speedX: { min: 1.3, max: 2.3 },
+                speedY: { min: 1.2, max: 1.8 },
+                points: 100,
+                respawnDelay: 1400,
+                width: 34,
+                height: 34,
+                directionChangeProbability: 0.009,
+                reverseMovementProbability: 0.005
             }
         };
     }
@@ -118,6 +132,7 @@ class EnemyManager {
         this.totalEnemiesCreated = 0;
         this.spawnSchedule = this.generateSpawnSchedule(levelConfig);
         this.nextSpawnIndex = 0;
+        this.activeTractorBeamCount = 0; // Reset tractor beam state for new level
     }
     
     // Generate spawn schedule for the current level
@@ -197,6 +212,27 @@ class EnemyManager {
                 duration: 10000,
                 activationChance: 0.20,
                 lastCheckTime: Date.now()
+            };
+        }
+        
+        // Add tractor beam properties for type 8 enemies
+        if (enemyType === 8) {
+            enemy.tractorBeam = {
+                active: false,
+                length: 0,
+                maxLength: 80,
+                growthRate: 4, // pixels per frame
+                fireChance: 0.003, // per frame probability of firing
+                cooldownTime: 3000, // 3 seconds between beam uses
+                prepareTime: 800, // 0.8 seconds to slow down movement before firing
+                growthTime: 550, // 0.55 seconds to grow to full length (+10%)
+                holdTime: 1100, // 1.1 seconds hold at full length (+10%)
+                retractTime: 880, // 0.88 seconds to retract (+10%)
+                lastFireTime: 0,
+                startTime: 0,
+                phase: 'idle', // 'idle', 'preparing', 'growing', 'holding', 'retracting'
+                originalSpeedX: 0, // Store original speeds for restoration
+                originalSpeedY: 0
             };
         }
         
@@ -520,6 +556,100 @@ class EnemyManager {
                         }
                     }
                 }
+                
+                // Update tractor beam for type 8 enemies
+                if (enemy.type === 8 && enemy.tractorBeam) {
+                    const currentTime = now;
+                    const beam = enemy.tractorBeam;
+                    
+                    if (beam.phase === 'idle') {
+                        // Check if we should fire the tractor beam
+                        if (currentTime - beam.lastFireTime >= beam.cooldownTime) {
+                            if (Math.random() < beam.fireChance) {
+                                // Only allow beam if no other tractor beam is active
+                                if (this.activeTractorBeamCount === 0) {
+                                    // Start preparation phase - store original speeds
+                                    beam.active = true;
+                                    beam.startTime = currentTime;
+                                    beam.length = 0;
+                                    beam.phase = 'preparing';
+                                    beam.originalSpeedX = enemy.speedX;
+                                    beam.originalSpeedY = enemy.speedY;
+                                    this.activeTractorBeamCount++;
+                                }
+                            }
+                        }
+                    } else if (beam.phase === 'preparing') {
+                        // Preparation phase - ease movement to zero
+                        const elapsedTime = currentTime - beam.startTime;
+                        const prepareProgress = Math.min(elapsedTime / beam.prepareTime, 1.0);
+                        
+                        // Ease out movement using smooth interpolation
+                        const easeOutFactor = 1.0 - prepareProgress;
+                        const smoothEase = easeOutFactor * easeOutFactor; // Quadratic ease-out
+                        
+                        enemy.speedX = beam.originalSpeedX * smoothEase;
+                        enemy.speedY = beam.originalSpeedY * smoothEase;
+                        
+                        if (prepareProgress >= 1.0) {
+                            // Preparation complete, start growing beam
+                            beam.phase = 'growing';
+                            beam.startTime = currentTime; // Reset timer for growing phase
+                            // Start tractor beam sound
+                            beam.soundInstance = this.soundManager.playTractorBeamSound();
+                        }
+                    } else if (beam.phase === 'growing') {
+                        // Growing phase - extend the beam
+                        const elapsedTime = currentTime - beam.startTime;
+                        const growthProgress = Math.min(elapsedTime / beam.growthTime, 1.0);
+                        beam.length = growthProgress * beam.maxLength;
+                        
+                        if (growthProgress >= 1.0) {
+                            beam.phase = 'holding';
+                            beam.length = beam.maxLength;
+                        }
+                    } else if (beam.phase === 'holding') {
+                        // Holding phase - keep beam at full length, enemy stays motionless
+                        const elapsedTime = currentTime - beam.startTime;
+                        if (elapsedTime >= beam.holdTime) {
+                            beam.phase = 'retracting';
+                            beam.startTime = currentTime; // Reset timer for retracting phase
+                        }
+                    } else if (beam.phase === 'retracting') {
+                        // Retracting phase - shrink the beam and restore movement
+                        const elapsedTime = currentTime - beam.startTime;
+                        const retractProgress = Math.min(elapsedTime / beam.retractTime, 1.0);
+                        beam.length = beam.maxLength * (1.0 - retractProgress);
+                        
+                        // Gradually restore movement during retraction
+                        const easeInFactor = retractProgress;
+                        const smoothEase = easeInFactor * easeInFactor; // Quadratic ease-in
+                        
+                        enemy.speedX = beam.originalSpeedX * smoothEase;
+                        enemy.speedY = beam.originalSpeedY * smoothEase;
+                        
+                        if (retractProgress >= 1.0) {
+                            // Beam cycle complete - fully restore movement
+                            beam.active = false;
+                            beam.length = 0;
+                            beam.phase = 'idle';
+                            beam.lastFireTime = currentTime;
+                            
+                            // Restore original movement speeds
+                            enemy.speedX = beam.originalSpeedX;
+                            enemy.speedY = beam.originalSpeedY;
+                            
+                            // Stop tractor beam sound
+                            if (beam.soundInstance) {
+                                this.soundManager.stopTractorBeamSound(beam.soundInstance);
+                                beam.soundInstance = null;
+                            }
+                            
+                            // Release the global tractor beam lock
+                            this.activeTractorBeamCount = Math.max(0, this.activeTractorBeamCount - 1);
+                        }
+                    }
+                }
             }
         }
         
@@ -538,6 +668,24 @@ class EnemyManager {
     removeDeadEnemies() {
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             if (!this.enemies[i].alive) {
+                const enemy = this.enemies[i];
+                // Clean up tractor beam if enemy had an active beam
+                if (enemy.type === 8 && enemy.tractorBeam && enemy.tractorBeam.active) {
+                    // Stop tractor beam sound
+                    if (enemy.tractorBeam.soundInstance) {
+                        this.soundManager.stopTractorBeamSound(enemy.tractorBeam.soundInstance);
+                        enemy.tractorBeam.soundInstance = null;
+                    }
+                    
+                    // Restore original movement if enemy was in preparation or beam phase
+                    if (enemy.tractorBeam.phase !== 'idle' && enemy.tractorBeam.originalSpeedX !== 0) {
+                        enemy.speedX = enemy.tractorBeam.originalSpeedX;
+                        enemy.speedY = enemy.tractorBeam.originalSpeedY;
+                    }
+                    
+                    // Release the global tractor beam lock
+                    this.activeTractorBeamCount = Math.max(0, this.activeTractorBeamCount - 1);
+                }
                 this.enemies.splice(i, 1);
             }
         }

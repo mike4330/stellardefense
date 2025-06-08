@@ -122,6 +122,18 @@ class VisualEffects {
             this.imagesLoaded++;
         };
         this.enemyImages.type7.src = 'enemy_type7.png';
+        
+        // Type 8 enemy image (capture fighter)
+        this.enemyImages.type8 = new Image();
+        this.enemyImages.type8.onload = () => {
+            this.imagesLoaded++;
+            console.log('Type 8 enemy image loaded');
+        };
+        this.enemyImages.type8.onerror = () => {
+            console.log('Type 8 enemy image failed to load, using fallback shapes');
+            this.imagesLoaded++;
+        };
+        this.enemyImages.type8.src = 'enemy_type8.png';
     }
     
     // Create explosion effect
@@ -282,6 +294,38 @@ class VisualEffects {
                         this.ctx.arc(centerX, centerY, enemy.width / 2, 0, 2 * Math.PI);
                         this.ctx.stroke();
                         this.ctx.setLineDash([]); // Reset line dash
+                    }
+                }
+                
+                // Draw tractor beam for type 8 enemies
+                if (enemy.type === 8 && enemy.tractorBeam && enemy.tractorBeam.active && enemy.tractorBeam.length > 0) {
+                    // Calculate beam start position (bottom center of enemy)
+                    const beamStartX = centerX;
+                    const beamStartY = enemy.y + enemy.height;
+                    const beamEndY = beamStartY + enemy.tractorBeam.length;
+                    
+                    // Draw the main beam
+                    const gradient = this.ctx.createLinearGradient(beamStartX, beamStartY, beamStartX, beamEndY);
+                    gradient.addColorStop(0, 'rgba(255, 170, 0, 0.8)'); // Golden color at top
+                    gradient.addColorStop(0.5, 'rgba(255, 200, 50, 0.6)'); // Lighter in middle  
+                    gradient.addColorStop(1, 'rgba(255, 170, 0, 0.3)'); // Fading at bottom
+                    
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.fillRect(beamStartX - 4, beamStartY, 8, enemy.tractorBeam.length);
+                    
+                    // Draw beam outline
+                    this.ctx.strokeStyle = 'rgba(255, 140, 0, 0.9)';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.strokeRect(beamStartX - 4, beamStartY, 8, enemy.tractorBeam.length);
+                    
+                    // Add sparkling effect along the beam
+                    const sparkleCount = Math.floor(enemy.tractorBeam.length / 10);
+                    for (let i = 0; i < sparkleCount; i++) {
+                        const sparkleY = beamStartY + (i * 10) + (Math.sin(Date.now() / 100 + i) * 2);
+                        const sparkleX = beamStartX + (Math.sin(Date.now() / 150 + i * 2) * 3);
+                        
+                        this.ctx.fillStyle = 'rgba(255, 255, 200, 0.8)';
+                        this.ctx.fillRect(sparkleX - 1, sparkleY - 1, 2, 2);
                     }
                 }
             }
@@ -469,6 +513,47 @@ class VisualEffects {
             this.ctx.closePath();
             this.ctx.fill();
             this.ctx.stroke();
+        } else if (enemy.type === 8) {
+            // Type 8 capture fighter - distinctive beetle/boss-like shape
+            this.ctx.fillStyle = '#ffaa00';
+            this.ctx.strokeStyle = '#ffdd44';
+            this.ctx.lineWidth = 2;
+            
+            const centerX = enemy.x + enemy.width / 2;
+            const centerY = enemy.y + enemy.height / 2;
+            const size = enemy.width * 0.4;
+            
+            // Draw main body (oval)
+            this.ctx.beginPath();
+            this.ctx.ellipse(centerX, centerY, size, size * 0.7, 0, 0, 2 * Math.PI);
+            this.ctx.fill();
+            this.ctx.stroke();
+            
+            // Draw wing-like extensions
+            this.ctx.fillStyle = '#ff8800';
+            this.ctx.strokeStyle = '#ffbb22';
+            this.ctx.lineWidth = 1;
+            
+            // Left wing
+            this.ctx.beginPath();
+            this.ctx.ellipse(centerX - size * 0.8, centerY, size * 0.4, size * 0.3, -Math.PI/6, 0, 2 * Math.PI);
+            this.ctx.fill();
+            this.ctx.stroke();
+            
+            // Right wing
+            this.ctx.beginPath();
+            this.ctx.ellipse(centerX + size * 0.8, centerY, size * 0.4, size * 0.3, Math.PI/6, 0, 2 * Math.PI);
+            this.ctx.fill();
+            this.ctx.stroke();
+            
+            // Draw distinctive markings (small circles for eyes/sensors)
+            this.ctx.fillStyle = '#ff0000';
+            this.ctx.beginPath();
+            this.ctx.arc(centerX - size * 0.3, centerY - size * 0.2, 2, 0, 2 * Math.PI);
+            this.ctx.fill();
+            this.ctx.beginPath();
+            this.ctx.arc(centerX + size * 0.3, centerY - size * 0.2, 2, 0, 2 * Math.PI);
+            this.ctx.fill();
         }
     }
     

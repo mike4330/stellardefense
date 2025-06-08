@@ -22,11 +22,25 @@
         <div id="gameContainer" style="position: relative;">
             <canvas id="gameCanvas" width="600" height="800"></canvas>
             <div id="instructions">Arrow keys to move • Space to shoot • P or ESC to pause • R to restart • Q to quit • H for high scores</div>
+            
+            <!-- ===== TITLE CARD START ===== -->
             <div id="startOverlay">
                 <div id="gameTitle">STELLAR DEFENSE</div>
                 <button id="startButton">START GAME</button>
                 <button id="viewHighScoresButton">HIGH SCORES</button>
             </div>
+            <!-- ===== TITLE CARD END ===== -->
+            
+            <!-- ===== ENEMY INFO CARD START ===== -->
+            <div id="enemyInfoOverlay">
+                <div class="enemy-info-header">ENEMY TYPES</div>
+                <div id="enemyInfoTable">
+                    <!-- Table will be populated by JavaScript -->
+                </div>
+                <button id="startButtonEnemyPage">START GAME</button>
+                <button id="viewHighScoresButtonEnemyPage">HIGH SCORES</button>
+            </div>
+            <!-- ===== ENEMY INFO CARD END ===== -->
             
             <!-- Game State Overlays -->
             <div id="pauseOverlay" class="game-overlay pause-overlay">
@@ -39,6 +53,7 @@
                 <div class="score-text">Final Score: <span id="finalScore">000000</span></div>
                 <div class="sub-text">Thanks for playing!</div>
                 <div class="sub-text">Press R to restart</div>
+                <div class="sub-text" id="titleReturnTimer">Returning to title screen in <span id="returnCountdown">5</span>...</div>
             </div>
             
             <div id="levelTransitionOverlay" class="game-overlay level-transition-overlay">
@@ -53,6 +68,7 @@
                 <div class="score-text">Final Score: <span id="victoryScore">000000</span></div>
                 <div class="sub-text">All levels completed!</div>
                 <div class="sub-text">Press R to restart</div>
+                <div class="sub-text" id="victoryReturnTimer">Returning to title screen in <span id="victoryCountdown">5</span>...</div>
             </div>
             
             <!-- High Score Entry Overlay -->
@@ -91,6 +107,8 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        
+        // ===== TITLE CARD ELEMENTS =====
         const startOverlay = document.getElementById('startOverlay');
         const startButton = document.getElementById('startButton');
         
@@ -124,6 +142,10 @@
         let playerInvulnerableTime = 0;
         let gameStarted = false;
         let highScoreChecked = false;  // Prevent multiple high score checks
+        
+        // ===== TITLE CARD RETURN SYSTEM =====
+        let gameOverStartTime = 0;     // When game over/victory screen was shown
+        let gameOverDelay = 5000;      // 5 seconds delay before returning to title (adjustable)
         
         // Player shooting parameters
         let playerFireRate = 85; // ms between shots in a burst
@@ -353,6 +375,9 @@
         
         // Restart game function
         function restartGame() {
+            // Stop all active tractor beam sounds
+            soundManager.stopAllTractorBeams();
+            
             score = 0;
             enemiesDestroyed = 0;
             totalEnemiesCreated = 0;
@@ -363,6 +388,7 @@
             currentLevel = 1;
             playerLives = 3;
             playerInvulnerable = false;
+            gameStarted = true;  // Make sure the game is marked as started
             gameStartTime = Date.now();
             highScoreChecked = false;  // Reset high score check flag
             
@@ -372,6 +398,9 @@
             
             // Reset extra life tracking
             extraLifeIndex = 0;
+            
+            // Reset title card return system
+            gameOverStartTime = 0;
             
             enemyConfig = levelConfigs[currentLevel];
             
@@ -391,10 +420,17 @@
             bullets.length = 0;
             enemyBullets.length = 0;
             visualEffects.explosions.length = 0;
+            
+            // Hide title card and all overlays when restarting
+            startOverlay.style.display = 'none';
+            visualEffects.hideAllOverlays();
         }
         
         // Advance to next level
         function nextLevel() {
+            // Stop all active tractor beam sounds when transitioning levels
+            soundManager.stopAllTractorBeams();
+            
             currentLevel++;
             if (levelConfigs[currentLevel]) {
                 enemyConfig = levelConfigs[currentLevel];
@@ -515,11 +551,37 @@
         
         // Update game state
         function update() {
+            // Always update starfield for attract screen effect
+            visualEffects.updateStarfield();
+            
+            // ===== TITLE CARD RETURN SYSTEM =====
+            // Check if we should return to title screen after delay (game over or victory)
+            if ((gameQuit || gameWon) && gameOverStartTime > 0) {
+                const timeOnScreen = Date.now() - gameOverStartTime;
+                const timeRemaining = Math.max(0, gameOverDelay - timeOnScreen);
+                const secondsRemaining = Math.ceil(timeRemaining / 1000);
+                
+                // Update countdown display for both game over and victory
+                const gameOverCountdown = document.getElementById('returnCountdown');
+                const victoryCountdown = document.getElementById('victoryCountdown');
+                
+                if (gameOverCountdown) {
+                    gameOverCountdown.textContent = secondsRemaining;
+                }
+                if (victoryCountdown) {
+                    victoryCountdown.textContent = secondsRemaining;
+                }
+                
+                if (timeOnScreen >= gameOverDelay) {
+                    returnToTitleScreen();
+                    return;
+                }
+            }
+            
             if (!gameStarted || paused || gameWon || levelTransition) return;
             
-            // If game is quit, only update starfield
+            // If game is quit, only update starfield (already done above)
             if (gameQuit) {
-                visualEffects.updateStarfield();
                 return;
             }
             
@@ -714,15 +776,19 @@
             }
             
             // Update visual effects
-            visualEffects.updateStarfield();
             visualEffects.updateExplosions();
         }
         
         // Draw everything
         function draw() {
-            // Clear screen and draw starfield
+            // Always clear screen and draw starfield (including on title screen)
             visualEffects.clearScreen();
             visualEffects.drawStarfield();
+            
+            // If still on title screen, just show starfield and return
+            if (!gameStarted) {
+                return;
+            }
             
             // If game is quit, only show starfield and game over text
             if (gameQuit) {
@@ -802,6 +868,10 @@
                 visualEffects.showOverlay('paused');
             } else if (gameWon) {
                 visualEffects.showOverlay('victory', { score });
+                // Also start return timer for victory screen
+                if (gameOverStartTime === 0) {
+                    gameOverStartTime = Date.now();
+                }
             } else if (!gameQuit && !levelTransition) {
                 // Hide overlays when game is running normally
                 visualEffects.hideAllOverlays();
@@ -817,33 +887,269 @@
         
         // Start the game
         
-        // Initialize game on start button click
-        startButton.addEventListener('click', () => {
+        // ===== ATTRACT SCREEN SYSTEM =====
+        
+        // Attract screen elements
+        const enemyInfoOverlay = document.getElementById('enemyInfoOverlay');
+        const startButtonEnemyPage = document.getElementById('startButtonEnemyPage');
+        const viewHighScoresButtonEnemyPage = document.getElementById('viewHighScoresButtonEnemyPage');
+        
+        // Attract screen state
+        let attractScreenTimer = null;
+        let currentAttractPage = 'title'; // 'title' or 'enemyInfo'
+        const attractPageDuration = 10000; // 10 seconds per page
+        
+        // Enemy type descriptions
+        const enemyDescriptions = {
+            1: { sprite: 'enemy_type1.png', behavior: 'Basic' },
+            2: { sprite: 'enemy_type2.png', behavior: 'Erratic' },
+            3: { sprite: 'enemy_type3.png', behavior: 'Moderate' },
+            4: { sprite: 'enemy_type4.png', behavior: 'Shield' },
+            5: { sprite: 'enemy_type5.png', behavior: 'Shooter' },
+            6: { sprite: 'enemy_type6.png', behavior: 'Retrograde' },
+            7: { sprite: 'enemy_type7.png', behavior: 'Balanced' },
+            8: { sprite: 'enemy_type8.png', behavior: 'Tractor' }
+        };
+        
+        // Initialize enemy info table
+        function initializeEnemyInfoTable() {
+            const enemyConfig = enemyManager.getEnemyBaseConfig();
+            const tableContainer = document.getElementById('enemyInfoTable');
+            
+            let tableHTML = `
+                <table class="enemy-info-table">
+                    <thead>
+                        <tr>
+                            <th class="enemy-type">Type</th>
+                            <th class="enemy-sprite">Enemy</th>
+                            <th class="enemy-points">Points</th>
+                            <th class="enemy-behavior">Ability</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            // Add each enemy type
+            for (let i = 1; i <= 8; i++) {
+                const config = enemyConfig[`type${i}`];
+                const description = enemyDescriptions[i];
+                if (config && description) {
+                    tableHTML += `
+                        <tr>
+                            <td class="enemy-type">${i}</td>
+                            <td class="enemy-sprite"><img src="${description.sprite}" alt="Enemy Type ${i}" class="enemy-sprite-img"></td>
+                            <td class="enemy-points">${config.points}</td>
+                            <td class="enemy-behavior">${description.behavior}</td>
+                        </tr>
+                    `;
+                }
+            }
+            
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+            
+            tableContainer.innerHTML = tableHTML;
+        }
+        
+        // Reset animations for elements
+        function resetPageAnimations(pageType) {
+            if (pageType === 'title') {
+                const title = document.getElementById('gameTitle');
+                const startBtn = document.getElementById('startButton');
+                const highScoreBtn = document.getElementById('viewHighScoresButton');
+                
+                // Reset animations
+                title.classList.add('reset-animation');
+                startBtn.classList.add('reset-button-animation');
+                highScoreBtn.classList.add('reset-button-animation');
+                
+                // Restart animations after a brief delay
+                setTimeout(() => {
+                    title.classList.remove('reset-animation');
+                    title.classList.add('restart-animation');
+                    startBtn.classList.remove('reset-button-animation');
+                    startBtn.classList.add('restart-button-animation');
+                    highScoreBtn.classList.remove('reset-button-animation');
+                    highScoreBtn.classList.add('restart-button-animation', 'delay-200');
+                }, 50);
+                
+                // Clean up classes after animations complete
+                setTimeout(() => {
+                    title.classList.remove('restart-animation');
+                    startBtn.classList.remove('restart-button-animation');
+                    highScoreBtn.classList.remove('restart-button-animation', 'delay-200');
+                }, 4000);
+                         } else if (pageType === 'enemyInfo') {
+                const header = document.querySelector('.enemy-info-header');
+                
+                // Reset animations for header only (buttons don't animate on this page)
+                header.classList.add('reset-animation');
+                
+                // Restart header animation after a brief delay
+                setTimeout(() => {
+                    header.classList.remove('reset-animation');
+                    header.classList.add('restart-animation');
+                }, 50);
+                
+                // Clean up classes after animation completes
+                setTimeout(() => {
+                    header.classList.remove('restart-animation');
+                }, 4000);
+            }
+        }
+        
+        // Switch between attract screen pages
+        function switchAttractPage() {
+            if (gameStarted) return; // Don't switch if game has started
+            
+            if (currentAttractPage === 'title') {
+                // Switch to enemy info page
+                startOverlay.style.display = 'none';
+                enemyInfoOverlay.style.display = 'flex';
+                currentAttractPage = 'enemyInfo';
+                resetPageAnimations('enemyInfo');
+            } else {
+                // Switch to title page
+                enemyInfoOverlay.style.display = 'none';
+                startOverlay.style.display = 'flex';
+                currentAttractPage = 'title';
+                resetPageAnimations('title');
+            }
+            
+            // Schedule next switch
+            if (attractScreenTimer) {
+                clearTimeout(attractScreenTimer);
+            }
+            attractScreenTimer = setTimeout(switchAttractPage, attractPageDuration);
+        }
+        
+        // Start attract screen cycling
+        function startAttractScreenCycling() {
+            if (gameStarted) return;
+            
+            // Start with title page
+            currentAttractPage = 'title';
+            startOverlay.style.display = 'flex';
+            enemyInfoOverlay.style.display = 'none';
+            
+            // Schedule first switch to enemy info
+            attractScreenTimer = setTimeout(switchAttractPage, attractPageDuration);
+        }
+        
+        // Stop attract screen cycling
+        function stopAttractScreenCycling() {
+            if (attractScreenTimer) {
+                clearTimeout(attractScreenTimer);
+                attractScreenTimer = null;
+            }
+        }
+        
+        // ===== TITLE CARD EVENT HANDLERS START =====
+        
+        // Initialize game on start button click (both pages)
+        function initializeGame() {
             if (!soundManager.audioContext) {
                 soundManager.initAudio();
             }
+            stopAttractScreenCycling();
             startOverlay.style.display = 'none';
+            enemyInfoOverlay.style.display = 'none';
             gameStarted = true;
             
             // Initialize game timing and spawn schedule when game actually starts
             gameStartTime = Date.now();
-        });
+        }
         
-        // High scores button click
-        document.getElementById('viewHighScoresButton').addEventListener('click', () => {
-            // Hide start overlay when viewing high scores from start screen
+        startButton.addEventListener('click', initializeGame);
+        startButtonEnemyPage.addEventListener('click', initializeGame);
+        
+        // High scores button click (both pages)
+        function showHighScoresFromAttract() {
+            stopAttractScreenCycling();
             startOverlay.style.display = 'none';
+            enemyInfoOverlay.style.display = 'none';
             
             highScoreManager.showHighScores(() => {
-                // Show start overlay again when high scores are closed
+                // Resume attract screen cycling when high scores are closed
                 if (!gameStarted) {
-                    startOverlay.style.display = 'flex';
+                    startAttractScreenCycling();
                 }
             });
-        });
+        }
+        
+        document.getElementById('viewHighScoresButton').addEventListener('click', showHighScoresFromAttract);
+        viewHighScoresButtonEnemyPage.addEventListener('click', showHighScoresFromAttract);
+
+        
+        // ===== TITLE CARD EVENT HANDLERS END =====
+        
+        // ===== TITLE CARD RETURN FUNCTION =====
+        function returnToTitleScreen() {
+            // Stop all active tractor beam sounds
+            soundManager.stopAllTractorBeams();
+            
+            // Reset all game state to initial values
+            gameStarted = false;
+            gameQuit = false;
+            gameWon = false;
+            paused = false;
+            levelTransition = false;
+            highScoreChecked = false;
+            score = 0;
+            enemiesDestroyed = 0;
+            totalEnemiesCreated = 0;
+            currentLevel = 1;
+            playerLives = 3;
+            playerInvulnerable = false;
+            gameOverStartTime = 0;
+            
+            // Reset pause timing
+            pauseStartTime = 0;
+            totalPausedTime = 0;
+            
+            // Reset extra life tracking
+            extraLifeIndex = 0;
+            
+            // Reset level config
+            enemyConfig = levelConfigs[currentLevel];
+            
+            // Initialize enemy manager with level config
+            enemyManager.initializeLevel(enemyConfig);
+            
+            // Update visual effects level
+            visualEffects.setCurrentLevel(currentLevel);
+            
+            // Reset player position
+            player.x = player.respawnX;
+            player.y = player.respawnY;
+            player.velocityX = 0;
+            player.velocityY = 0;
+            
+            // Clear all arrays
+            bullets.length = 0;
+            enemyBullets.length = 0;
+            visualEffects.explosions.length = 0;
+            
+            // Update displays
+            document.getElementById('scoreValue').textContent = score.toString().padStart(6, '0');
+            updateLevelDisplay();
+            updateProgressBar();
+            
+            // Hide all overlays and start attract screen cycling
+            visualEffects.hideAllOverlays();
+            startAttractScreenCycling();
+            
+            console.log('Returned to title screen');
+        }
         
         updateLevelDisplay();
         updateProgressBar();
+        
+        // Initialize attract screen system
+        initializeEnemyInfoTable();
+        startAttractScreenCycling();
         
         gameLoop();
         
@@ -889,8 +1195,12 @@
         
         // Finalize the game quit process
         function finalizeGameQuit() {
+            // Stop all active tractor beam sounds
+            soundManager.stopAllTractorBeams();
+            
             gameQuit = true;
             paused = false; // Make sure the starfield keeps moving
+            gameOverStartTime = Date.now(); // Start the timer for returning to title
         }
         
         // Handle player death

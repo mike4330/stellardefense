@@ -135,13 +135,15 @@ text-shadow: 0 0 20px #ff0000, 0 0 38px #fd6b6bea;
     border-radius: 3px;
 }
 
+/* ===== TITLE CARD STYLES START ===== */
+
 #startOverlay {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.9);
+    background: transparent; /* Make transparent to show starfield */
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -160,16 +162,27 @@ text-shadow: 0 0 20px #ff0000, 0 0 38px #fd6b6bea;
     border-radius: 8px;
     transition: all 0.2s ease;
     margin-top: 20px;
+    
+    /* Initial state - hidden */
+    opacity: 0;
+    transform: translateY(20px);
+    
+    /* Fade-in animation after title completes */
+    animation: buttonFadeIn 2000ms ease-out 1700ms forwards;
+    
+    /* Glow effect */
+    box-shadow: 0 0 20px rgba(0, 204, 255, 0.3);
 }
 
 #startButton:hover {
     background: #00ccff;
     color: #000;
-    transform: scale(1.05);
+    transform: translateY(0) scale(1.05);
+    box-shadow: 0 0 30px rgba(0, 204, 255, 0.6);
 }
 
 #startButton:active {
-    transform: scale(0.95);
+    transform: translateY(0) scale(0.95);
 }
 
 #viewHighScoresButton {
@@ -183,16 +196,27 @@ text-shadow: 0 0 20px #ff0000, 0 0 38px #fd6b6bea;
     border-radius: 8px;
     transition: all 0.2s ease;
     margin-top: 15px;
+    
+    /* Initial state - hidden */
+    opacity: 0;
+    transform: translateY(20px);
+    
+    /* Fade-in animation after title completes, slightly delayed from start button */
+    animation: buttonFadeIn 2000ms ease-out 1900ms forwards;
+    
+    /* Subtle glow effect */
+    box-shadow: 0 0 15px rgba(136, 136, 136, 0.2);
 }
 
 #viewHighScoresButton:hover {
     background: #888;
     color: #000;
-    transform: scale(1.05);
+    transform: translateY(0) scale(1.05);
+    box-shadow: 0 0 25px rgba(136, 136, 136, 0.5);
 }
 
 #viewHighScoresButton:active {
-    transform: scale(0.95);
+    transform: translateY(0) scale(0.95);
 }
 
 #gameTitle {
@@ -224,6 +248,220 @@ text-shadow: 0 0 20px #ff0000, 0 0 38px #fd6b6bea;
         opacity: 1;
     }
 }
+
+/* Keyframe animation for button fade-in effect */
+@keyframes buttonFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Animation reset utility class */
+.reset-animation {
+    animation: none !important;
+    transform: scale(0.1) !important;
+    opacity: 0 !important;
+}
+
+.reset-animation.restart-animation {
+    animation: titleZoomIn 1700ms cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+}
+
+.reset-button-animation {
+    animation: none !important;
+    opacity: 0 !important;
+    transform: translateY(20px) !important;
+}
+
+.reset-button-animation.restart-button-animation {
+    animation: buttonFadeIn 2000ms ease-out 1700ms forwards !important;
+}
+
+.reset-button-animation.restart-button-animation.delay-200 {
+    animation: buttonFadeIn 2000ms ease-out 1900ms forwards !important;
+}
+
+/* ===== ENEMY INFO CARD STYLES START ===== */
+
+#enemyInfoOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent; /* Make transparent to show starfield */
+    display: none; /* Initially hidden */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 40px;
+    box-sizing: border-box;
+}
+
+.enemy-info-header {
+    color: #00ccff;
+    text-shadow: 2px 2px 4px rgba(99, 99, 255, 0.7);
+    font-size: 42px;
+    font-family: 'Orbitron', 'GameFont', 'Courier New', monospace;
+    font-weight: 900;
+    margin-bottom: 30px;
+    text-align: center;
+    
+    /* Title animation */
+    animation: titleZoomIn 1700ms cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    transform: scale(0.1);
+}
+
+#enemyInfoTable {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto 30px auto;
+}
+
+.enemy-info-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-family: 'GameFont', 'Courier New', monospace;
+    border: 3px solid #00ccff;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0, 204, 255, 0.5), 0 0 40px rgba(0, 204, 255, 0.3);
+}
+
+.enemy-info-table th {
+    background: #001122;
+    color: #00ccff;
+    padding: 12px 8px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    border: none;
+    border-bottom: 2px solid #00ccff;
+}
+
+.enemy-info-table th:first-child {
+    border-top-left-radius: 12px;
+}
+
+.enemy-info-table th:last-child {
+    border-top-right-radius: 12px;
+}
+
+.enemy-info-table td {
+    padding: 10px 8px;
+    text-align: center;
+    font-size: 14px;
+    border: none;
+    background: rgba(0, 0, 0, 0.7);
+    color: #ffffff;
+}
+
+.enemy-info-table .enemy-type {
+    width: 15%;
+    font-weight: bold;
+}
+
+.enemy-info-table .enemy-sprite {
+    width: 35%;
+    text-align: center;
+    padding: 8px;
+}
+
+.enemy-sprite-img {
+    width: 24px;
+    height: 24px;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.3));
+}
+
+.enemy-info-table .enemy-points {
+    width: 25%;
+    font-family: 'ScoreFont', 'GameFont', monospace;
+    color: #ffaa00;
+    font-weight: bold;
+}
+
+.enemy-info-table .enemy-behavior {
+    width: 25%;
+    font-size: 12px;
+    color: #aaccff;
+}
+
+/* Enemy page buttons - same styling as title page but different IDs */
+#startButtonEnemyPage {
+    background: #000;
+    border: 2px solid #00ccff;
+    color: #00ccff;
+    padding: 15px 40px;
+    font-size: 24px;
+    font-family: 'GameFont', 'Courier New', monospace;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    margin-top: 20px;
+    
+    /* No animations - appear immediately */
+    opacity: 1;
+    transform: translateY(0);
+    
+    /* Glow effect */
+    box-shadow: 0 0 20px rgba(0, 204, 255, 0.3);
+}
+
+#startButtonEnemyPage:hover {
+    background: #00ccff;
+    color: #000;
+    transform: translateY(0) scale(1.05);
+    box-shadow: 0 0 30px rgba(0, 204, 255, 0.6);
+}
+
+#startButtonEnemyPage:active {
+    transform: translateY(0) scale(0.95);
+}
+
+#viewHighScoresButtonEnemyPage {
+    background: #000;
+    border: 2px solid #888;
+    color: #888;
+    padding: 12px 30px;
+    font-size: 18px;
+    font-family: 'GameFont', 'Courier New', monospace;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    margin-top: 15px;
+    
+    /* No animations - appear immediately */
+    opacity: 1;
+    transform: translateY(0);
+    
+    /* Subtle glow effect */
+    box-shadow: 0 0 15px rgba(136, 136, 136, 0.2);
+}
+
+#viewHighScoresButtonEnemyPage:hover {
+    background: #888;
+    color: #000;
+    transform: translateY(0) scale(1.05);
+    box-shadow: 0 0 25px rgba(136, 136, 136, 0.5);
+}
+
+#viewHighScoresButtonEnemyPage:active {
+    transform: translateY(0) scale(0.95);
+}
+
+/* ===== ENEMY INFO CARD STYLES END ===== */
+
+/* ===== TITLE CARD STYLES END ===== */
 
 /* Game Overlay Styles */
 .game-overlay {

@@ -28,7 +28,7 @@ const levelConfigs = {
             collisionSeparation: 2.0,
             wrapBuffer: 50,
             speedMultiplier: 1.02,
-            eccentricityMultiplier: 0.6
+            eccentricityMultiplier: 0.8
         }
     },
     2: {
@@ -40,7 +40,7 @@ const levelConfigs = {
             collisionSeparation: 2.2,
             wrapBuffer: 60,
             speedMultiplier: 1.24,
-            eccentricityMultiplier: 0.89
+            eccentricityMultiplier: 1.09
         }
     },
     3: {
@@ -52,7 +52,7 @@ const levelConfigs = {
             collisionSeparation: 2.4,
             wrapBuffer: 70,
             speedMultiplier: 1.4,
-            eccentricityMultiplier: 1.11
+            eccentricityMultiplier: 1.31
         }
     },
     4: {
@@ -64,7 +64,7 @@ const levelConfigs = {
             collisionSeparation: 2.6,
             wrapBuffer: 70,
             speedMultiplier: 1.54,
-            eccentricityMultiplier: 1.3
+            eccentricityMultiplier: 1.5
         }
     },
     5: {
@@ -76,7 +76,7 @@ const levelConfigs = {
             collisionSeparation: 2.8,
             wrapBuffer: 80,
             speedMultiplier: 1.66,
-            eccentricityMultiplier: 1.47
+            eccentricityMultiplier: 1.67
         }
     },
     6: {
@@ -88,7 +88,7 @@ const levelConfigs = {
             collisionSeparation: 3.0,
             wrapBuffer: 88,
             speedMultiplier: 1.77,
-            eccentricityMultiplier: 1.61
+            eccentricityMultiplier: 1.81
         }
     },
     7: {
@@ -100,7 +100,7 @@ const levelConfigs = {
             collisionSeparation: 3.2,
             wrapBuffer: 88,
             speedMultiplier: 1.88,
-            eccentricityMultiplier: 1.75
+            eccentricityMultiplier: 1.95
         }
     },
     8: {
@@ -112,7 +112,7 @@ const levelConfigs = {
             collisionSeparation: 3.4,
             wrapBuffer: 88,
             speedMultiplier: 1.97,
-            eccentricityMultiplier: 1.88,
+            eccentricityMultiplier: 2.08,
             scoreBonus: 10
         }
     },
@@ -125,111 +125,111 @@ const levelConfigs = {
             collisionSeparation: 3.6,
             wrapBuffer: 95,
             speedMultiplier: 2.06,
-            eccentricityMultiplier: 2.0,
+            eccentricityMultiplier: 2.2,
             scoreBonus: 10
         }
     },
     10: {
         name: "2 Charlie",
-        allowedEnemyTypes: [1, 2, 3, 4, 5, 6, 7],
+        allowedEnemyTypes: [1, 2, 3, 4, 5, 6],
         global: {
             maxEnemies: 57,
             spawnTimeWindow: 60.9,
             collisionSeparation: 3.9,
             wrapBuffer: 102,
             speedMultiplier: 2.14,
-            eccentricityMultiplier: 2.11,
+            eccentricityMultiplier: 2.31,
             scoreBonus: 10
         }
     },
     11: {
         name: "2 Delta",
-        allowedEnemyTypes: [2, 3, 4, 5, 6, 7],
+        allowedEnemyTypes: [1, 2, 3, 4, 5, 6, 7],
         global: {
             maxEnemies: 59,
             spawnTimeWindow: 62.8,
             collisionSeparation: 4.2,
             wrapBuffer: 110,
             speedMultiplier: 2.22,
-            eccentricityMultiplier: 2.22,
+            eccentricityMultiplier: 2.42,
             scoreBonus: 10
         }
     },
     12: {
         name: "2 Echo",
-        allowedEnemyTypes: [2, 3, 4, 5, 6, 7],
+        allowedEnemyTypes: [1, 2, 3, 4, 5, 6, 7],
         global: {
             maxEnemies: 62,
             spawnTimeWindow: 64.6,
             collisionSeparation: 4.6,
             wrapBuffer: 118,
             speedMultiplier: 2.3,
-            eccentricityMultiplier: 2.32,
+            eccentricityMultiplier: 2.52,
             scoreBonus: 10
         }
     },
     13: {
         name: "2 Foxtrot",
-        allowedEnemyTypes: [3, 4, 6, 7],
+        allowedEnemyTypes: [1, 2, 3, 4, 5, 6, 7, 8],
         global: {
             maxEnemies: 64,
             spawnTimeWindow: 66.3,
             collisionSeparation: 5.0,
             wrapBuffer: 125,
             speedMultiplier: 2.37,
-            eccentricityMultiplier: 2.42,
+            eccentricityMultiplier: 2.62,
             scoreBonus: 10
         }
     },
     14: {
         name: "2 Golf",
-        allowedEnemyTypes: [3, 4, 6, 7],
+        allowedEnemyTypes: [1, 2, 3, 4, 5, 6, 7, 8],
         global: {
             maxEnemies: 67,
             spawnTimeWindow: 67.9,
             collisionSeparation: 5.5,
             wrapBuffer: 133,
             speedMultiplier: 2.45,
-            eccentricityMultiplier: 2.52,
+            eccentricityMultiplier: 2.72,
             scoreBonus: 10
         }
     },
     15: {
         name: "3 Alfa",
-        allowedEnemyTypes: [4, 6, 7],
+        allowedEnemyTypes: [2, 3, 4, 5, 6, 7, 8],
         global: {
             maxEnemies: 69,
             spawnTimeWindow: 69.48,
             collisionSeparation: 5.5,
             wrapBuffer: 133,
             speedMultiplier: 2.51,
-            eccentricityMultiplier: 2.61,
+            eccentricityMultiplier: 2.81,
             scoreBonus: 15
         }
     },
     16: {
         name: "3 Bravo",
-        allowedEnemyTypes: [4, 5, 6, 7],
+        allowedEnemyTypes: [2, 3, 4, 5, 6, 7, 8],
         global: {
             maxEnemies: 71,
             spawnTimeWindow: 71.0,
             collisionSeparation: 5.51,
             wrapBuffer: 132,
             speedMultiplier: 2.58,
-            eccentricityMultiplier: 2.7,
+            eccentricityMultiplier: 2.9,
             scoreBonus: 15
         }
     },
     17: {
         name: "3 Charlie",
-        allowedEnemyTypes: [4, 5, 6, 7],
+        allowedEnemyTypes: [3, 4, 5, 6, 7, 8],
         global: {
             maxEnemies: 73,
             spawnTimeWindow: 72.48,
             collisionSeparation: 5.0,
             wrapBuffer: 132,
             speedMultiplier: 2.64,
-            eccentricityMultiplier: 2.79,
+            eccentricityMultiplier: 2.99,
             scoreBonus: 15
         }
     }

@@ -2,6 +2,7 @@
 class SoundManager {
     constructor() {
         this.audioContext = null;
+        this.activeTractorBeams = []; // Track multiple tractor beam instances
     }
 
     // Initialize audio context
@@ -206,6 +207,118 @@ playEnemyBulletSound() {
     oscillator.start(this.audioContext.currentTime);
     oscillator.stop(this.audioContext.currentTime + params.duration);
 }
+
+    // Play tractor beam sound with pulse width modulation
+    playTractorBeamSound() {
+        if (!this.audioContext) return;
+        
+        // Create main oscillator for 55Hz square wave
+        const osc1 = this.audioContext.createOscillator();
+        const osc2 = this.audioContext.createOscillator();
+        const gainNode1 = this.audioContext.createGain();
+        const gainNode2 = this.audioContext.createGain();
+        const mixGain = this.audioContext.createGain();
+        const outputGain = this.audioContext.createGain();
+        
+        // Create modulation oscillator for pulse width at 1Hz
+        const modOsc = this.audioContext.createOscillator();
+        const modGain = this.audioContext.createGain();
+        
+        // Set up main oscillators for PWM simulation
+        osc1.type = 'square';
+        osc2.type = 'square';
+        osc1.frequency.setValueAtTime(55, this.audioContext.currentTime);
+        osc2.frequency.setValueAtTime(65, this.audioContext.currentTime); // Detuned +10Hz
+        
+        // Set up modulation oscillator (1Hz for pulse width modulation)
+        modOsc.type = 'sine';
+        modOsc.frequency.setValueAtTime(1, this.audioContext.currentTime);
+        
+        // Modulation depth for pulse width variation (+/- 50%)
+        modGain.gain.setValueAtTime(0.5, this.audioContext.currentTime);
+        
+        // Connect modulation to the gain of the second oscillator to create PWM effect
+        modOsc.connect(modGain);
+        modGain.connect(gainNode2.gain);
+        
+        // Set base gains - osc1 positive, osc2 will be modulated
+        gainNode1.gain.setValueAtTime(0.5, this.audioContext.currentTime);
+        gainNode2.gain.setValueAtTime(0.0, this.audioContext.currentTime); // Will be modulated
+        
+        // Connect oscillators through gains to mixer
+        osc1.connect(gainNode1);
+        osc2.connect(gainNode2);
+        gainNode1.connect(mixGain);
+        gainNode2.connect(mixGain);
+        
+        // Set up output gain for volume control
+        outputGain.gain.setValueAtTime(0.08, this.audioContext.currentTime);
+        
+        // Connect to output
+        mixGain.connect(outputGain);
+        outputGain.connect(this.audioContext.destination);
+        
+        // Store references for stopping later
+        const tractorBeamInstance = {
+            osc1, osc2, modOsc, outputGain
+        };
+        
+        this.activeTractorBeams.push(tractorBeamInstance);
+        
+        // Start all oscillators
+        const startTime = this.audioContext.currentTime;
+        osc1.start(startTime);
+        osc2.start(startTime);
+        modOsc.start(startTime);
+        
+        return tractorBeamInstance;
+    }
+    
+    // Stop specific tractor beam sound instance
+    stopTractorBeamSound(instance = null) {
+        if (!this.audioContext) return;
+        
+        if (instance) {
+            // Stop specific instance
+            this.stopSpecificTractorBeam(instance);
+        } else {
+            // Stop all active tractor beams if no specific instance provided
+            this.stopAllTractorBeams();
+        }
+    }
+    
+    // Stop a specific tractor beam instance
+    stopSpecificTractorBeam(instance) {
+        const stopTime = this.audioContext.currentTime + 0.05; // Small fade out
+        
+        try {
+            // Fade out quickly
+            instance.outputGain.gain.setValueAtTime(
+                instance.outputGain.gain.value, 
+                this.audioContext.currentTime
+            );
+            instance.outputGain.gain.linearRampToValueAtTime(0, stopTime);
+            
+            // Stop all oscillators
+            instance.osc1.stop(stopTime);
+            instance.osc2.stop(stopTime);
+            instance.modOsc.stop(stopTime);
+        } catch (e) {
+            console.log('Error stopping tractor beam instance:', e);
+        }
+        
+        // Remove from active list
+        const index = this.activeTractorBeams.indexOf(instance);
+        if (index > -1) {
+            this.activeTractorBeams.splice(index, 1);
+        }
+    }
+    
+    // Stop all active tractor beam sounds (for cleanup)
+    stopAllTractorBeams() {
+        const beamsToStop = [...this.activeTractorBeams]; // Copy array to avoid modification issues
+        beamsToStop.forEach(beam => this.stopSpecificTractorBeam(beam));
+    }
 }
 
 // Create global sound manager instance
