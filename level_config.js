@@ -28,7 +28,7 @@ const levelConfigs = {
             collisionSeparation: 2.0,
             wrapBuffer: 50,
             speedMultiplier: 1.02,
-            eccentricityMultiplier: 0.8
+            eccentricityMultiplier: 1.0
         }
     },
     2: {
@@ -40,7 +40,7 @@ const levelConfigs = {
             collisionSeparation: 2.2,
             wrapBuffer: 60,
             speedMultiplier: 1.24,
-            eccentricityMultiplier: 1.09
+            eccentricityMultiplier: 1.29
         }
     },
     3: {
@@ -190,7 +190,7 @@ const levelConfigs = {
             collisionSeparation: 5.5,
             wrapBuffer: 133,
             speedMultiplier: 2.45,
-            eccentricityMultiplier: 2.72,
+            eccentricityMultiplier: 2.92,
             scoreBonus: 10
         }
     },
@@ -203,7 +203,7 @@ const levelConfigs = {
             collisionSeparation: 5.5,
             wrapBuffer: 133,
             speedMultiplier: 2.51,
-            eccentricityMultiplier: 2.81,
+            eccentricityMultiplier: 3.01,
             scoreBonus: 15
         }
     },
@@ -216,7 +216,7 @@ const levelConfigs = {
             collisionSeparation: 5.51,
             wrapBuffer: 132,
             speedMultiplier: 2.58,
-            eccentricityMultiplier: 2.9,
+            eccentricityMultiplier: 3.1,
             scoreBonus: 15
         }
     },
@@ -229,7 +229,7 @@ const levelConfigs = {
             collisionSeparation: 5.0,
             wrapBuffer: 132,
             speedMultiplier: 2.64,
-            eccentricityMultiplier: 2.99,
+            eccentricityMultiplier: 4.22,
             scoreBonus: 15
         }
     }

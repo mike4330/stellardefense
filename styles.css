@@ -336,7 +336,7 @@ text-shadow: 0 0 20px #ff0000, 0 0 38px #fd6b6bea;
 }
 
 .enemy-info-table th {
-    background: #001122;
+    background: rgba(0, 17, 34, 0.6);
     color: #00ccff;
     padding: 12px 8px;
     text-align: center;
@@ -359,7 +359,7 @@ text-shadow: 0 0 20px #ff0000, 0 0 38px #fd6b6bea;
     text-align: center;
     font-size: 14px;
     border: none;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.42);
     color: #ffffff;
 }
 
@@ -410,7 +410,7 @@ text-shadow: 0 0 20px #ff0000, 0 0 38px #fd6b6bea;
     margin-top: 20px;
     
     /* No animations - appear immediately */
-    opacity: 1;
+    opacity: 0.6;
     transform: translateY(0);
     
     /* Glow effect */
@@ -420,6 +420,7 @@ text-shadow: 0 0 20px #ff0000, 0 0 38px #fd6b6bea;
 #startButtonEnemyPage:hover {
     background: #00ccff;
     color: #000;
+    opacity: 1;
     transform: translateY(0) scale(1.05);
     box-shadow: 0 0 30px rgba(0, 204, 255, 0.6);
 }
@@ -441,7 +442,7 @@ text-shadow: 0 0 20px #ff0000, 0 0 38px #fd6b6bea;
     margin-top: 15px;
     
     /* No animations - appear immediately */
-    opacity: 1;
+    opacity: 0.6;
     transform: translateY(0);
     
     /* Subtle glow effect */
@@ -451,6 +452,7 @@ text-shadow: 0 0 20px #ff0000, 0 0 38px #fd6b6bea;
 #viewHighScoresButtonEnemyPage:hover {
     background: #888;
     color: #000;
+    opacity: 1;
     transform: translateY(0) scale(1.05);
     box-shadow: 0 0 25px rgba(136, 136, 136, 0.5);
 }

@@ -49,7 +49,7 @@ class EnemyManager {
                 respawnDelay: 750,
                 width: 22,
                 height: 22,
-                directionChangeProbability: 0.001,
+                directionChangeProbability: 0.008,
                 reverseMovementProbability: 0.0
             },
             type2: {
@@ -59,7 +59,7 @@ class EnemyManager {
                 respawnDelay: 950,
                 width: 26,
                 height: 26,
-                directionChangeProbability: 0.002,
+                directionChangeProbability: 0.012,
                 reverseMovementProbability: 0.0
             },
             type3: {
@@ -69,7 +69,7 @@ class EnemyManager {
                 respawnDelay: 975,
                 width: 30,
                 height: 30,
-                directionChangeProbability: 0.004,
+                directionChangeProbability: 0.015,
                 reverseMovementProbability: 0.0
             },
             type4: {
@@ -79,8 +79,8 @@ class EnemyManager {
                 respawnDelay: 1100,
                 width: 32,
                 height: 32,
-                directionChangeProbability: 0.006,
-                reverseMovementProbability: 0.003
+                directionChangeProbability: 0.020,
+                reverseMovementProbability: 0.015
             },
             type5: {
                 speedX: { min: 1.2, max: 2.2 },
@@ -89,7 +89,7 @@ class EnemyManager {
                 respawnDelay: 1200,
                 width: 28,
                 height: 28,
-                directionChangeProbability: 0.008,
+                directionChangeProbability: 0.025,
                 reverseMovementProbability: 0.0
             },
             type6: {
@@ -99,8 +99,8 @@ class EnemyManager {
                 respawnDelay: 1300,
                 width: 30,
                 height: 30,
-                directionChangeProbability: 0.007,
-                reverseMovementProbability: 0.008
+                directionChangeProbability: 0.030,
+                reverseMovementProbability: 0.025
             },
             type7: {
                 speedX: { min: 1.1, max: 2.1 },
@@ -109,8 +109,8 @@ class EnemyManager {
                 respawnDelay: 1250,
                 width: 32,
                 height: 32,
-                directionChangeProbability: 0.005,
-                reverseMovementProbability: 0.004
+                directionChangeProbability: 0.022,
+                reverseMovementProbability: 0.018
             },
             type8: {
                 speedX: { min: 1.3, max: 2.3 },
@@ -119,8 +119,8 @@ class EnemyManager {
                 respawnDelay: 1400,
                 width: 34,
                 height: 34,
-                directionChangeProbability: 0.009,
-                reverseMovementProbability: 0.005
+                directionChangeProbability: 0.035,
+                reverseMovementProbability: 0.020
             }
         };
     }
@@ -357,8 +357,11 @@ class EnemyManager {
                         enemy2.x = Math.max(0, Math.min(this.canvas.width - enemy2.width, enemy2.x));
                         enemy2.y = Math.max(0, Math.min(this.canvas.height - enemy2.height, enemy2.y));
                         
-                        enemy1.direction *= -1;
-                        enemy2.direction *= -1;
+                        // Only reverse direction 40% of the time to reduce interference with direction change logic
+                        if (Math.random() < 0.4) {
+                            enemy1.direction *= -1;
+                            enemy2.direction *= -1;
+                        }
                     }
                 }
             }
@@ -427,14 +430,24 @@ class EnemyManager {
 
                 // Stochastic Direction Change: Check timer instead of probability
                 if (now >= enemy.nextDirectionChangeTime) {
-                    const playerDir = this.calculateDirectionToPlayer(enemy, player);
-                    // Update enemy direction to point toward player
-                    enemy.direction = playerDir.directionX > 0 ? 1 : -1;
-                    enemy.directionY = playerDir.directionY > 0 ? 1 : -1;
+                    // 50% chance to home toward player, 50% chance for random direction
+                    if (Math.random() < 0.5) {
+                        const playerDir = this.calculateDirectionToPlayer(enemy, player);
+                        // Update enemy direction to point toward player
+                        enemy.direction = playerDir.directionX > 0 ? 1 : -1;
+                        enemy.directionY = playerDir.directionY > 0 ? 1 : -1;
+                    } else {
+                        // Random direction change
+                        enemy.direction = Math.random() > 0.5 ? 1 : -1;
+                        // 30% chance to also change Y direction for more interesting movement
+                        if (Math.random() < 0.3) {
+                            enemy.directionY *= -1;
+                        }
+                    }
                     
-                    // Schedule next direction change
+                    // Schedule next direction change with reasonable variance
                     const avgInterval = 1000 / (baseConfig.directionChangeProbability * eccentricityMultiplier);
-                    enemy.nextDirectionChangeTime = now + Math.random() * avgInterval * 2; // Add variance
+                    enemy.nextDirectionChangeTime = now + avgInterval + (Math.random() - 0.5) * avgInterval * 0.5;
                 }
 
                 // Y-Direction Reversal Logic (Types 4, 6, and 7)
@@ -442,19 +455,19 @@ class EnemyManager {
                     if (enemy.y > this.canvas.height * 0.1 && now >= enemy.nextReverseTime) {
                         enemy.directionY *= -1;
                         const avgInterval = 1000 / (baseConfig.reverseMovementProbability * eccentricityMultiplier);
-                        enemy.nextReverseTime = now + Math.random() * avgInterval * 2;
+                        enemy.nextReverseTime = now + avgInterval + (Math.random() - 0.5) * avgInterval * 0.5;
                     }
                 } else if (enemy.type === 6) {
                     if (now >= enemy.nextReverseTime) {
                         enemy.directionY *= -1;
                         const avgInterval = 1000 / (baseConfig.reverseMovementProbability * eccentricityMultiplier);
-                        enemy.nextReverseTime = now + Math.random() * avgInterval * 2;
+                        enemy.nextReverseTime = now + avgInterval + (Math.random() - 0.5) * avgInterval * 0.5;
                     }
                 } else if (enemy.type === 7) {
                     if (enemy.y > this.canvas.height * 0.3 && now >= enemy.nextReverseTime) {
                         enemy.directionY *= -1;
                         const avgInterval = 1000 / (baseConfig.reverseMovementProbability * eccentricityMultiplier);
-                        enemy.nextReverseTime = now + Math.random() * avgInterval * 2;
+                        enemy.nextReverseTime = now + avgInterval + (Math.random() - 0.5) * avgInterval * 0.5;
                     }
                 }
 
